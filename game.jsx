@@ -3070,8 +3070,11 @@ const PiercingShopPanel = ({player, tattooDraft, setTattooDraft, onBuyPiercing, 
 // ─────────────────────────────────────────────────────────────────────
 // 21.3 系統面板 — SaveLoadPanel
 // ─────────────────────────────────────────────────────────────────────
-const SaveLoadPanel = ({slots, readMeta, onSave, onLoad, onDelete, onBack}) => {
+const SaveLoadPanel = ({slots, readMeta, onSave, onLoad, onDelete, onBack, onExport, onImport}) => {
   const [pendingDeleteSlot, setPendingDeleteSlot] = React.useState(null);
+  const [exportText, setExportText] = React.useState('');
+  const [importText, setImportText] = React.useState('');
+  const [ioMsg, setIoMsg] = React.useState('');
   const handleDeleteClick = (slot) => {
     if (pendingDeleteSlot === slot) {
       // 第二次點擊：執行刪除
@@ -3124,6 +3127,24 @@ const SaveLoadPanel = ({slots, readMeta, onSave, onLoad, onDelete, onBack}) => {
         </div>
       );
     })}
+    {/* 匯出 / 匯入存檔 — 不依賴 localStorage 持久化，跨裝置或沙箱(Claude預覽)用 */}
+    <div className="border-t border-slate-700 pt-3 space-y-2">
+      <p className="text-cyan-300 text-sm font-bold">📦 匯出 / 匯入存檔</p>
+      <p className={S.textXsGray}>在 Claude 預覽等不持久的環境，用這個把進度複製出來自行保存；換環境或下次再貼回來匯入即可。</p>
+      <button onClick={()=>{ setPendingDeleteSlot(null); setImportText(''); setIoMsg(''); setExportText(onExport()); }}
+        className="w-full py-1.5 bg-cyan-800 hover:bg-cyan-700 text-white rounded text-xs font-bold">📤 匯出目前進度</button>
+      {exportText && (<>
+        <textarea readOnly value={exportText} onFocus={e=>e.target.select()} rows={3}
+          className="w-full text-[10px] bg-slate-950 text-slate-300 rounded p-2 border border-slate-700 font-mono" />
+        <button onClick={()=>{ try { navigator.clipboard.writeText(exportText); setIoMsg('✅ 已複製到剪貼簿，請貼到安全的地方保存'); } catch { setIoMsg('ℹ️ 無法自動複製，請手動反白上面文字複製'); } }}
+          className="w-full py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs">複製</button>
+      </>)}
+      <textarea value={importText} onChange={e=>setImportText(e.target.value)} placeholder="把先前匯出的存檔字串貼在這裡…" rows={3}
+        className="w-full text-[10px] bg-slate-950 text-slate-300 rounded p-2 border border-slate-700 font-mono" />
+      <button onClick={()=>{ const ok = onImport(importText.trim()); if (!ok) setIoMsg('❌ 字串無效，無法匯入'); }}
+        className="w-full py-1.5 bg-green-800 hover:bg-green-700 text-white rounded text-xs font-bold">📥 匯入並開始遊戲</button>
+      {ioMsg && <p className="text-xs text-amber-300">{ioMsg}</p>}
+    </div>
     <button onClick={handleBackClick} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg font-bold">返回</button>
   </div>
   );
@@ -3761,6 +3782,23 @@ const TowerGame = () => {
     addLog(`🗑 已刪除 ${slot}。`,'hint');
     actionRef.current = false;
 
+  };
+  // 匯出/匯入：把進度序列化成文字，不依賴 localStorage 持久化（跨裝置/沙箱用）
+  const doExportCurrent = () => JSON.stringify({version:SAVE_VERSION, player, enemy, logs:logs.slice(-50)});
+  const doImportText = (str) => {
+    if (!str) return false;
+    try {
+      const data = JSON.parse(str);
+      if (!data || !data.player) return false;
+      setPlayer({...INITIAL_PLAYER, ...data.player});
+      setEnemy(data.enemy||null);
+      setLogs(data.logs && data.logs.length>0 ? data.logs : [{msg:'歡迎來到百層塔。',tag:'hint'}]);
+      setGs('explore');
+      addLog('📥 已從匯入字串載入進度。','good');
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   // ── 送客 ──────────────────────────────────────────────────
@@ -4739,7 +4777,7 @@ const TowerGame = () => {
   );
   if (gs==='wardrobe') return <WardrobePanel player={player} onEquip={doEquip} onUnequip={doUnequip} onBack={()=>setGs('explore')}/>;
   if (gs==='piercingShop') return <PiercingShopPanel player={player} tattooDraft={tattooDraft} setTattooDraft={setTattooDraft} onBuyPiercing={doBuyPiercing} onTattoo={doTattoo} onTrimHair={doTrimHair} onBack={()=>setGs('explore')}/>;
-  if (gs==='saveLoad') return <SaveLoadPanel slots={SAVE_SLOTS} readMeta={readSaveMeta} onSave={doSave} onLoad={doLoad} onDelete={doDeleteSave} onBack={()=>setGs('explore')}/>;
+  if (gs==='saveLoad') return <SaveLoadPanel slots={SAVE_SLOTS} readMeta={readSaveMeta} onSave={doSave} onLoad={doLoad} onDelete={doDeleteSave} onBack={()=>setGs('explore')} onExport={doExportCurrent} onImport={doImportText}/>;
 
   // 做愛保險套詢問
   if (enemy?.phase==='condomAsk') {
