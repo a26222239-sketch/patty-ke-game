@@ -401,6 +401,7 @@
 // 2026-06-06  5.3/5.10 swallowExtra（吞精追加）文本：hand/boob/butt/leg × room+bath 共8池各5條填入（接在 spill 結尾，舔起身上精液吞下；全程只用{E}、無{V_*}）。修6處錯字(捏頭→乳頭/⋯術→⋯⋯/翼紋→小心/浪芬→浪叫×2/使記→使勁)。前戲架構重整全數完成、待整頓歸零
 // 2026-06-06  全域  文言剔除/台灣口語化字詞替換（僅換詞、不動句子主幹，跳過註解行）：巧笑倩兮→奉上勾魂的微笑、半推半就→迫不及待、如獲大赦般→興奮地、大馬金刀地在床沿坐下→霸氣地在床沿大開雙腿坐下、不著寸縷→一絲不掛、更衣→脫衣服(服務)/換衣服(自換)、蜜液→愛液、交槍/繳械→交代出來、浪肉/賤肉→欠操的騷肉、花唇→花瓣、豪乳→巨乳、胴體→身子、白濁→濃精(濃稠白濁→大股濃精)。刻意保留：身軀(客人用詞)、雙峰({BUST}相鄰)、未用K罩杯(避免與{BUST}衝突)；自貶詞變化調整(主觀改寫)未做
 // 2026-06-06  身軀  柯妤潔語境 8 處 身軀→身子/騷身子/發情的身體（客人/兩人 10 處保留）；884「奶子用力揉碎」語病→「狠狠抓揉」
+// 2026-06-06  邏輯  P1 戰敗死魚孔洞強制 vagina（對齊「一律內射小穴」文本，修污漬記anal/不懷孕的矛盾）；P2 doSave 補 try/catch+finally（寫入失敗不再鎖死 actionRef，並提示改用匯出）
 
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -3743,11 +3744,16 @@ const TowerGame = () => {
     if (leavingRef.current) return;
     if (actionRef.current) return;
     actionRef.current = true;
-    const data = {version:SAVE_VERSION, player, enemy, logs:logs.slice(-50)};
-    localStorage.setItem(`towerSave_${slot}`, JSON.stringify(data));
-    addLog(`💾 已存入 ${slot}。`,'good');
-    actionRef.current = false;
-
+    try {
+      const data = {version:SAVE_VERSION, player, enemy, logs:logs.slice(-50)};
+      localStorage.setItem(`towerSave_${slot}`, JSON.stringify(data));
+      addLog(`💾 已存入 ${slot}。`,'good');
+    } catch {
+      // localStorage 寫入可能失敗（沙箱被擋/容量滿）；務必還原 actionRef，否則之後動作會被鎖死
+      addLog('❌ 存檔失敗（瀏覽器空間不足或被封鎖）。可改用「📤 匯出目前進度」自行保存。','bad');
+    } finally {
+      actionRef.current = false;
+    }
   };
   const doLoad = (slot) => {
     if (leavingRef.current) return;
@@ -4678,9 +4684,11 @@ const TowerGame = () => {
     // 起床文本緊接死魚文本（中間不輸出任何柯妤潔主觀視角文本，她已昏倒）
     addLog(pick(SCENE_TEXTS.wakeDefeated), 'story');
     if (isBathDefeat) setGs('explore'); // 場景切回房間
-    const hole = enemy?.pendingHole || (enemy?.mainActPref) || 'vagina';
+    // 戰敗死魚文本一律是「無套內射小穴」，機制強制對齊 vagina（污漬記小穴、可懷孕），
+    // 避免客人偏好肛交時出現「文字寫內射子宮、卻記成 anal 又不懷孕」的矛盾。
+    const hole = 'vagina';
     const {vol,newVol} = calcOrgasmOutput(enemy.semenVolume, 200, enemy.tierIdx||0);
-    const stainPart = hole==='vagina' ? 'vagina' : 'anal';
+    const stainPart = 'vagina';
     // addStainLog 不呼叫：污漬文本是柯妤潔主觀視角，昏倒中不合理；數值仍在 setPlayer 累積
     const getsPregnant = !player.isPregnant && hole==='vagina' && Math.random()<0.3;
     const curMins = player.timeMinutes;
