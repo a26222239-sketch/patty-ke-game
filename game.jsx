@@ -3611,29 +3611,6 @@ const TowerGame = () => {
       />
     );
   }
-  if (gs==='title') {
-    const saved = SAVE_SLOTS.map(s=>({slot:s, meta:readSaveMeta(s)})).filter(x=>x.meta);
-    const newest = saved.slice().sort((a,b)=>(((b.meta.day||0)*1440+(b.meta.time||0))-((a.meta.day||0)*1440+(a.meta.time||0))))[0];
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 flex flex-col items-center justify-center gap-5 p-6 text-center">
-        <h1 className="text-4xl font-bold text-amber-300">🏰 百層塔</h1>
-        <p className="text-slate-500 text-xs">柯妤潔的征服之路</p>
-        <div className="w-full max-w-xs space-y-3 mt-2">
-          {newest && (
-            <button onClick={()=>doLoad(newest.slot)}
-              className="w-full py-3 bg-green-700 hover:bg-green-600 text-white rounded-lg font-bold">
-              ▶️ 繼續上次進度
-              <span className="block text-xs font-normal opacity-80">{newest.meta.name}・第{newest.meta.day}天　體力{newest.meta.hp}／💰{newest.meta.gold}</span>
-            </button>
-          )}
-          <button onClick={()=>setGs('saveLoad')}
-            className="w-full py-2.5 bg-cyan-700 hover:bg-cyan-600 text-white rounded-lg font-bold">📂 讀取／匯入存檔</button>
-          <button onClick={()=>{ setPlayer(JSON.parse(JSON.stringify(INITIAL_PLAYER))); setEnemy(null); setLogs([{msg:'歡迎來到百層塔。',tag:'hint'}]); setGs('explore'); }}
-            className="w-full py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-bold">🆕 開新遊戲</button>
-        </div>
-      </div>
-    );
-  }
   if (gs==='status') return <StatusPanel player={player} onBack={()=>setGs('explore')} />;
   if (gs==='shop') return <ShopPanel player={player} shop={shop} onBuy={doBuyItem} onBuyCondom={doBuyCondom} onBack={()=>{setPlayer(p=>({...p,shopSessionOpen:false}));setGs('explore');}} />;
   if (gs==='birth') return (
@@ -3815,6 +3792,33 @@ const TowerGame = () => {
 // ──────────────────────────────────────────────────
   // 主 JSX
 // ──────────────────────────────────────────────────
+  // 起始畫面：整頁取代（不套用狀態列/日誌主版型）
+  if (gs==='title') {
+    const saved = SAVE_SLOTS.map(s=>({slot:s, meta:readSaveMeta(s)})).filter(x=>x.meta);
+    const newest = saved.slice().sort((a,b)=>(((b.meta.day||0)*1440+(b.meta.time||0))-((a.meta.day||0)*1440+(a.meta.time||0))))[0];
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 flex flex-col items-center justify-center gap-5 p-6 text-center">
+        <div>
+          <h1 className="text-4xl font-bold text-rose-400">百層塔</h1>
+          <p className="text-slate-500 text-xs mt-1">柯妤潔的征服之路</p>
+        </div>
+        <div className="w-full max-w-xs space-y-3">
+          {newest && (
+            <button onClick={()=>doLoad(newest.slot)}
+              className="w-full py-3 bg-green-700 hover:bg-green-600 text-white rounded-lg font-bold">
+              ▶️ 繼續上次進度
+              <span className="block text-xs font-normal opacity-80">{newest.meta.name}・第{newest.meta.day}天　體力{newest.meta.hp}／💰{newest.meta.gold}</span>
+            </button>
+          )}
+          <button onClick={()=>setGs('saveLoad')}
+            className="w-full py-2.5 bg-cyan-700 hover:bg-cyan-600 text-white rounded-lg font-bold">📂 讀取／匯入存檔</button>
+          <button onClick={()=>{ setPlayer(JSON.parse(JSON.stringify(INITIAL_PLAYER))); setEnemy(null); setLogs([{msg:'歡迎來到百層塔。',tag:'hint'}]); setGs('explore'); }}
+            className="w-full py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-bold">🆕 開新遊戲</button>
+        </div>
+      </div>
+    );
+  }
+
   const {total:charmTotal} = calcCharm(player);
   const {title:fameTitle, color:repColor} = getReputationTitle(player.fame||0);
   const endPct = player.hp/player.baseHp*100;
