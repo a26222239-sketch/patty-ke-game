@@ -1,5 +1,5 @@
 // ╔════════════════════════════════════════════════════════════════════╗
-// ║              百層塔 — 永續開發規則文件 (v1.5)                        ║
+// ║              柯妤潔的娼館 — 永續開發規則文件 (v1.5)                        ║
 // ║  新增功能必須遵循此規則，違反會在驗證時被掃出來                      ║
 // ╚════════════════════════════════════════════════════════════════════╝
 //
@@ -2003,7 +2003,7 @@ const TowerGame = () => {
   const [enemy,   setEnemy]   = useState(null);
   const leavingRef = useRef(false);
   const actionRef = useRef(false);
-  const [logs,    setLogs]    = useState([{msg:'歡迎來到百層塔。',tag:'hint'}]);
+  const [logs,    setLogs]    = useState([{msg:'歡迎來到柯妤潔的娼館。',tag:'hint'}]);
   const [gs,      setGs]      = useState('title');
   const [shop,    setShop]    = useState([]);
   const [tattooDraft, setTattooDraft] = useState({loc:'',size:'',content:''});
@@ -2598,7 +2598,7 @@ const TowerGame = () => {
     fromVersion: data.version,
     player: {...INITIAL_PLAYER, ...(data.player||{})},
     enemy: data.enemy || null,
-    logs: (data.logs && data.logs.length>0) ? data.logs : [{msg:'歡迎來到百層塔。',tag:'hint'}],
+    logs: (data.logs && data.logs.length>0) ? data.logs : [{msg:'歡迎來到柯妤潔的娼館。',tag:'hint'}],
   });
   // 把（已升級的）存檔套用到遊戲狀態
   const applySave = (data) => {
@@ -3799,7 +3799,7 @@ const TowerGame = () => {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 flex flex-col items-center justify-center gap-5 p-6 text-center">
         <div>
-          <h1 className="text-4xl font-bold text-rose-400">百層塔</h1>
+          <h1 className="text-4xl font-bold text-rose-400">柯妤潔的娼館</h1>
           <p className="text-slate-500 text-xs mt-1">柯妤潔的征服之路</p>
         </div>
         <div className="w-full max-w-xs space-y-3">
@@ -3812,7 +3812,7 @@ const TowerGame = () => {
           )}
           <button onClick={()=>setGs('saveLoad')}
             className="w-full py-2.5 bg-cyan-700 hover:bg-cyan-600 text-white rounded-lg font-bold">📂 讀取／匯入存檔</button>
-          <button onClick={()=>{ setPlayer(JSON.parse(JSON.stringify(INITIAL_PLAYER))); setEnemy(null); setLogs([{msg:'歡迎來到百層塔。',tag:'hint'}]); setGs('explore'); }}
+          <button onClick={()=>{ setPlayer(JSON.parse(JSON.stringify(INITIAL_PLAYER))); setEnemy(null); setLogs([{msg:'歡迎來到柯妤潔的娼館。',tag:'hint'}]); setGs('explore'); }}
             className="w-full py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-bold">🆕 開新遊戲</button>
         </div>
       </div>
@@ -3828,7 +3828,7 @@ const TowerGame = () => {
       <div className="w-full max-w-sm flex flex-col gap-3">
         {/* 標題 */}
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-rose-400">百層塔</h1>
+          <h1 className="text-2xl font-bold text-rose-400">柯妤潔的娼館</h1>
           <div className="flex justify-center gap-4 mt-1">
             <span className="text-yellow-200 text-xl font-bold tracking-wide">第 {player.days} 天</span>
             <span className="text-yellow-400 text-xl font-bold tracking-wide">{formatTime(player.timeMinutes)}</span>
