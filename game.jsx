@@ -2598,7 +2598,12 @@ const TowerGame = () => {
     fromVersion: data.version,
     player: {...INITIAL_PLAYER, ...(data.player||{})},
     enemy: data.enemy || null,
-    logs: (data.logs && data.logs.length>0) ? data.logs : [{msg:'歡迎來到柯妤潔的娼館。',tag:'hint'}],
+    // 載入舊存檔時，順手把日誌裡殘留的舊遊戲名「百層塔」更新成現名（避免舊歡迎詞露出）
+    logs: (data.logs && data.logs.length>0)
+      ? data.logs.map(e => typeof e === 'string'
+          ? e.replace(/百層塔/g, '柯妤潔的娼館')
+          : (e && e.msg ? {...e, msg: e.msg.replace(/百層塔/g, '柯妤潔的娼館')} : e))
+      : [{msg:'歡迎來到柯妤潔的娼館。',tag:'hint'}],
   });
   // 把（已升級的）存檔套用到遊戲狀態
   const applySave = (data) => {
