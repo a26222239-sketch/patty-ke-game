@@ -3805,7 +3805,6 @@ const TowerGame = () => {
       <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 flex flex-col items-center justify-center gap-5 p-6 text-center">
         <div>
           <h1 className="text-4xl font-bold text-rose-400">柯妤潔的娼館</h1>
-          <p className="text-slate-500 text-xs mt-1">柯妤潔的征服之路</p>
         </div>
         <div className="w-full max-w-xs space-y-3">
           {newest && (
