@@ -938,9 +938,19 @@ const formatText = (tpl, eName, vol, bust, hips) => {
 // 8.4 存檔工具 — SAVE_SLOTS / readSaveMeta
 // ─────────────────────────────────────────────────────────────────────
 const SAVE_SLOTS = ['slot1','slot2','slot3'];
+const SAVE_KEY = slot => `brothelSave_${slot}`;
+// 一次性遷移：把舊版 towerSave_ 鍵搬到新鍵 brothelSave_ 並刪除舊鍵（清除 tower 殘留、不丟失既有存檔）
+try {
+  SAVE_SLOTS.forEach(slot => {
+    const legacy = localStorage.getItem(`towerSave_${slot}`);
+    if (legacy === null) return;
+    if (localStorage.getItem(SAVE_KEY(slot)) === null) localStorage.setItem(SAVE_KEY(slot), legacy);
+    localStorage.removeItem(`towerSave_${slot}`);
+  });
+} catch {}
 const readSaveMeta = slot => {
   try {
-    const d = JSON.parse(localStorage.getItem(`towerSave_${slot}`)||'null');
+    const d = JSON.parse(localStorage.getItem(SAVE_KEY(slot))||'null');
     if (!d) return null;
     const p = d.player || {};
     return {
@@ -2584,7 +2594,7 @@ const TowerGame = () => {
     actionRef.current = true;
     try {
       const data = {version:SAVE_VERSION, player, enemy, logs:logs.slice(-50)};
-      localStorage.setItem(`towerSave_${slot}`, JSON.stringify(data));
+      localStorage.setItem(SAVE_KEY(slot), JSON.stringify(data));
       addLog(`💾 已存入 ${slot}。`,'good');
     } catch {
       // localStorage 寫入可能失敗（沙箱被擋/容量滿）；務必還原 actionRef，否則之後動作會被鎖死
@@ -2621,7 +2631,7 @@ const TowerGame = () => {
     if (actionRef.current) return;
     actionRef.current = true;
     try {
-      const data = JSON.parse(localStorage.getItem(`towerSave_${slot}`));
+      const data = JSON.parse(localStorage.getItem(SAVE_KEY(slot)));
       if (!data) { addLog('❌ 無存檔資料。','bad'); return; }
       applySave(data);
       addLog('📂 讀取存檔成功。','good');
@@ -2635,7 +2645,7 @@ const TowerGame = () => {
     if (leavingRef.current) return;
     if (actionRef.current) return;
     actionRef.current = true;
-    localStorage.removeItem(`towerSave_${slot}`);
+    localStorage.removeItem(SAVE_KEY(slot));
     addLog(`🗑 已刪除 ${slot}。`,'hint');
     actionRef.current = false;
 
