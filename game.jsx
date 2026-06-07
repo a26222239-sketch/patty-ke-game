@@ -403,6 +403,7 @@
 // 2026-06-06  身軀  柯妤潔語境 8 處 身軀→身子/騷身子/發情的身體（客人/兩人 10 處保留）；884「奶子用力揉碎」語病→「狠狠抓揉」
 // 2026-06-06  邏輯  P1 戰敗死魚孔洞強制 vagina（對齊「一律內射小穴」文本，修污漬記anal/不懷孕的矛盾）；P2 doSave 補 try/catch+finally（寫入失敗不再鎖死 actionRef，並提示改用匯出）
 // 2026-06-07  拆檔  P3 將 6 個文本常數(SCENE_TEXTS/HAIR_PREF_HIT_TEXTS/PREGNANT_WAKE_TEXTS/BODYHAIR_GROW_TEXTS/STAIN_TEXTS/BATH_WASH_TEXTS)抽出至 texts.js；game.jsx 5026→3862行。編譯產物大小不變(等價)。清過時設計備註與 SECTION9 註解
+// 2026-06-07  P4  P4-5 Tailwind 改編譯(移除CDN, 加 tailwind/postcss config, 產18KB CSS, 已驗證含所有class)；P4-6 加起始畫面 gs='title'(繼續上次進度/讀取匯入/開新遊戲)；P4-7 抽出 migrateSave/applySave(doLoad+doImportText共用, 版本提示與升級擴充點)
 
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -2003,7 +2004,7 @@ const TowerGame = () => {
   const leavingRef = useRef(false);
   const actionRef = useRef(false);
   const [logs,    setLogs]    = useState([{msg:'歡迎來到百層塔。',tag:'hint'}]);
-  const [gs,      setGs]      = useState('explore');
+  const [gs,      setGs]      = useState('title');
   const [shop,    setShop]    = useState([]);
   const [tattooDraft, setTattooDraft] = useState({loc:'',size:'',content:''});
   const [showRestMenu, setShowRestMenu] = useState(false);
@@ -2592,30 +2593,38 @@ const TowerGame = () => {
       actionRef.current = false;
     }
   };
+  // 存檔升級：未來破壞性結構改動的單一擴充點。目前以 INITIAL_PLAYER 補齊舊檔缺漏欄位（向後相容）
+  const migrateSave = (data) => ({
+    fromVersion: data.version,
+    player: {...INITIAL_PLAYER, ...(data.player||{})},
+    enemy: data.enemy || null,
+    logs: (data.logs && data.logs.length>0) ? data.logs : [{msg:'歡迎來到百層塔。',tag:'hint'}],
+  });
+  // 把（已升級的）存檔套用到遊戲狀態
+  const applySave = (data) => {
+    const s = migrateSave(data);
+    setPlayer(s.player);
+    setEnemy(s.enemy);
+    setLogs(s.logs);
+    setGs('explore');
+    if (s.fromVersion !== SAVE_VERSION) {
+      addLog(`ℹ️ 存檔版本 ${s.fromVersion ?? '未知'}（目前 v${SAVE_VERSION}），已自動相容升級。`, 'hint');
+    }
+  };
   const doLoad = (slot) => {
     if (leavingRef.current) return;
     if (actionRef.current) return;
     actionRef.current = true;
     try {
       const data = JSON.parse(localStorage.getItem(`towerSave_${slot}`));
-      if (!data) {
-        addLog('❌ 無存檔資料。','bad');
-        actionRef.current = false;
-        return;
-      }
-      // 用 INITIAL_PLAYER 作為基礎，data.player 覆蓋上去
-      // 確保舊存檔缺少的新欄位用預設值補齊（向後相容）
-      const mergedPlayer = {...INITIAL_PLAYER, ...data.player};
-      setPlayer(mergedPlayer);
-      setEnemy(data.enemy||null);
-      setLogs(data.logs && data.logs.length>0 ? data.logs : [{msg:'歡迎來到百層塔。',tag:'hint'}]);
-      setGs('explore');
+      if (!data) { addLog('❌ 無存檔資料。','bad'); return; }
+      applySave(data);
       addLog('📂 讀取存檔成功。','good');
     } catch {
       addLog('❌ 讀取失敗。','bad');
+    } finally {
+      actionRef.current = false;
     }
-    actionRef.current = false;
-
   };
   const doDeleteSave = (slot) => {
     if (leavingRef.current) return;
@@ -2633,10 +2642,7 @@ const TowerGame = () => {
     try {
       const data = JSON.parse(str);
       if (!data || !data.player) return false;
-      setPlayer({...INITIAL_PLAYER, ...data.player});
-      setEnemy(data.enemy||null);
-      setLogs(data.logs && data.logs.length>0 ? data.logs : [{msg:'歡迎來到百層塔。',tag:'hint'}]);
-      setGs('explore');
+      applySave(data);
       addLog('📥 已從匯入字串載入進度。','good');
       return true;
     } catch {
@@ -3603,6 +3609,29 @@ const TowerGame = () => {
           setGs('explore');
         }}
       />
+    );
+  }
+  if (gs==='title') {
+    const saved = SAVE_SLOTS.map(s=>({slot:s, meta:readSaveMeta(s)})).filter(x=>x.meta);
+    const newest = saved.slice().sort((a,b)=>(((b.meta.day||0)*1440+(b.meta.time||0))-((a.meta.day||0)*1440+(a.meta.time||0))))[0];
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 flex flex-col items-center justify-center gap-5 p-6 text-center">
+        <h1 className="text-4xl font-bold text-amber-300">🏰 百層塔</h1>
+        <p className="text-slate-500 text-xs">柯妤潔的征服之路</p>
+        <div className="w-full max-w-xs space-y-3 mt-2">
+          {newest && (
+            <button onClick={()=>doLoad(newest.slot)}
+              className="w-full py-3 bg-green-700 hover:bg-green-600 text-white rounded-lg font-bold">
+              ▶️ 繼續上次進度
+              <span className="block text-xs font-normal opacity-80">{newest.meta.name}・第{newest.meta.day}天　體力{newest.meta.hp}／💰{newest.meta.gold}</span>
+            </button>
+          )}
+          <button onClick={()=>setGs('saveLoad')}
+            className="w-full py-2.5 bg-cyan-700 hover:bg-cyan-600 text-white rounded-lg font-bold">📂 讀取／匯入存檔</button>
+          <button onClick={()=>{ setPlayer(JSON.parse(JSON.stringify(INITIAL_PLAYER))); setEnemy(null); setLogs([{msg:'歡迎來到百層塔。',tag:'hint'}]); setGs('explore'); }}
+            className="w-full py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-bold">🆕 開新遊戲</button>
+        </div>
+      </div>
     );
   }
   if (gs==='status') return <StatusPanel player={player} onBack={()=>setGs('explore')} />;
