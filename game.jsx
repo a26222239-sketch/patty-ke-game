@@ -1753,10 +1753,11 @@ const SHOPKEEPER_NAME = '阿坤';
 // 任一終點（老闆拒絕／柯妤潔不接受／服務完成）都用掉當日機會，隔天開店才能再要求。
 //   acceptPenalty：服務越明顯，老闆越怕被店裡客人看到，接受率額外扣的基數（露胸最隱密、口交最明顯）。
 //   discountRange：成功完成可得的折扣區間(off 比例)；人流越高越刺激→折扣越靠區間上限。
+// 服務耗時：手交/口交比照娼院前戲固定 15 分；露胸較單純給 10 分（時間消耗與妓院一致）
 const SHOP_DISCOUNT_SERVICES = [
-  { key:'flash', label:'露出胸部', risk:'較隱密',   acceptPenalty:0.00, discountRange:[0.05, 0.15] },
-  { key:'hand',  label:'手交',     risk:'有點明顯', acceptPenalty:0.15, discountRange:[0.15, 0.35] },
-  { key:'oral',  label:'口交',     risk:'非常明顯', acceptPenalty:0.30, discountRange:[0.30, 0.60] },
+  { key:'flash', label:'露出胸部', risk:'較隱密',   acceptPenalty:0.00, discountRange:[0.05, 0.15], time:10 },
+  { key:'hand',  label:'手交',     risk:'有點明顯', acceptPenalty:0.15, discountRange:[0.15, 0.35], time:15 },
+  { key:'oral',  label:'口交',     risk:'非常明顯', acceptPenalty:0.30, discountRange:[0.30, 0.60], time:15 },
 ];
 // 老闆接受率：人流越多越怕被看到；服務越明顯再扣基數。夾在 0~1
 const discountAcceptChance = (svc, traffic) =>
@@ -2595,7 +2596,7 @@ const TowerGame = () => {
     let tpl = pool.swallow ? pick(pool.swallow) : pick(pool.spill);
     if (!pool.swallow && pool.swallowExtra && pool.swallowExtra.length) tpl += pick(pool.swallowExtra);
     setShopDiscount(d => Math.max(d, off));
-    setPlayer(p=>({...p, discountAttemptDay:p.days}));     // 服務完成用掉今天機會
+    setPlayer(p=>addMinutes({...p, discountAttemptDay:p.days}, svc.time||15));  // 服務完成用掉今天機會、耗時比照娼院前戲
     addLog('💋 ' + tpl.replace(/{BOSS}/g, SHOPKEEPER_NAME), 'story');
     addLog(`💳 結帳折扣已套用：打 ${formatZhe(off)} 折（省 ${Math.round(off*100)}%）。`, 'gold');
     setBossOffer(null);
