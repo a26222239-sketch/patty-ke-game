@@ -409,7 +409,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Heart, ArrowUp, Beaker, ChevronRight, Bed, Baby, HeartHandshake,
          Store, Coins, Shirt, ShieldCheck, User, Scissors, PenTool, Flame } from 'lucide-react';
-import { SCENE_TEXTS, HAIR_PREF_HIT_TEXTS, PREGNANT_WAKE_TEXTS, BODYHAIR_GROW_TEXTS, STAIN_TEXTS, BATH_WASH_TEXTS } from './texts.js';
+import { SCENE_TEXTS, HAIR_PREF_HIT_TEXTS, PREGNANT_WAKE_TEXTS, BODYHAIR_GROW_TEXTS, STAIN_TEXTS, BATH_WASH_TEXTS, PREG_BODY } from './texts.js';
 
 // ╔════════════════════════════════════════════════════════════════════╗
 // ║ SECTION 1: 全域樣式 — BR / BB / LOG_COLORS / S                      ║
@@ -1046,23 +1046,47 @@ const getPregnancyStage = (p) => {
 // ─────────────────────────────────────────────────────────────────────
 // 11.3 三圍與罩杯 — getBodyMeasurements / getCurrentCup
 // ─────────────────────────────────────────────────────────────────────
+// 懷孕/產後 連續身材增量（隨天數平滑變化，不再到分期才硬跳）
+const getPregBodyAdd = (p) => {
+  if (p.isPregnant) {
+    const t = Math.min(1, (p.pregnantDays||0) / 270);   // 0..1 孕期進度
+    return { bust: 16 * t, waist: 24 * t * t };          // 胸圍線性、腰圍 ease-in（孕肚中後期才明顯）
+  }
+  if ((p.birthCount||0) > 0) {
+    const recover = Math.max(0, 1 - (p.postBirthDays||0) / 90); // 產後約 90 天線性退回孕前
+    return { bust: 16 * recover, waist: 0 };
+  }
+  return { bust: 0, waist: 0 };
+};
 const getBodyMeasurements = (p) => {
-  const stage = getPregnancyStage(p);
-  const bustAdd  = [0, 4, 8, 16][stage];   // 胸圍增加：初+4, 中+8, 晚+16cm
-  const waistAdd = [0, 4, 12, 24][stage];  // 腰圍增加：初+4, 中+12, 晚+24cm（晚期72+24=96，接近臀圍102）
-  return {
-    bust:  p.bust  + bustAdd,
-    waist: p.waist + waistAdd,
-    hips:  p.hips,
-  };
+  const a = getPregBodyAdd(p);
+  return { bust: Math.round(p.bust + a.bust), waist: Math.round(p.waist + a.waist), hips: p.hips };
+};
+const getCurrentCup = (p) => {
+  const baseIdx = CUPS.indexOf(p.cup||'K');
+  const cupAdd = Math.round(getPregBodyAdd(p).bust / 4);  // 每 +4cm 升一罩杯，跟著連續胸圍走
+  return CUPS[Math.min(baseIdx + cupAdd, CUPS.length-1)];
 };
 
-const getCurrentCup = (p) => {
-  // 用實際 cup 欄位加上懷孕罩杯增量，不用 bust 公式換算
-  const baseIdx = CUPS.indexOf(p.cup||'K');
-  const stage = getPregnancyStage(p);
-  const cupAdd = [0, 1, 2, 4][stage]; // 早期+1罩杯, 中期+2, 晚期+4（著床期 0 無變化）
-  return CUPS[Math.min(baseIdx + cupAdd, CUPS.length-1)];
+// ── 孕期身體佔位符：取「目前狀態」對應的池 key ──
+const pregAreolaKey = (p) => p.isPregnant ? ['normal','early','mid','late'][getPregnancyStage(p)]
+                                          : ((p.birthCount||0) > 0 ? 'late' : 'normal');
+const pregBreastKey = (p) => 'lv' + Math.min(4, Math.round(getPregBodyAdd(p).bust / 4));
+const pregBellyKey  = (p) => { const w = getPregBodyAdd(p).waist; if (w < 2) return null; if (w < 9) return 'slight'; if (w < 17) return 'clear'; return 'big'; };
+const pregMilkKey   = (p) => {
+  if (p.isPregnant && getPregnancyStage(p) === 3) return 'colostrum';                                  // 孕後期初乳
+  if (!p.isPregnant && (p.birthCount||0) > 0 && (p.postBirthDays||0) > 0 && (p.postBirthDays||0) <= 60) return 'milk'; // 產後60天泌乳
+  return null;
+};
+// 把 5 個孕期佔位符換成「當下狀態」隨機抽一條（函式回呼 → 同一行多次出現也各抽各的）
+const resolvePregPlaceholders = (text, p) => {
+  if (!text || text.indexOf('{') === -1) return text;
+  return text
+    .replace(/{AREOLA_COLOR}/g, () => pick(PREG_BODY.AREOLA_COLOR[pregAreolaKey(p)]))
+    .replace(/{AREOLA_SIZE}/g,  () => pick(PREG_BODY.AREOLA_SIZE[pregAreolaKey(p)]))
+    .replace(/{BREAST_SIZE}/g,  () => pick(PREG_BODY.BREAST_SIZE[pregBreastKey(p)]))
+    .replace(/{BELLY_SIZE}/g,   () => { const k = pregBellyKey(p); return k ? pick(PREG_BODY.BELLY_SIZE[k]) : ''; })
+    .replace(/{MILK}/g,         () => { const k = pregMilkKey(p);  return k ? pick(PREG_BODY.MILK[k]) : ''; });
 };
 
 // ─────────────────────────────────────────────────────────────────────
@@ -2025,8 +2049,8 @@ const TowerGame = () => {
   // 體力歸零由 UI 昏倒按鈕觸發（移除 useEffect 避免閉包問題）
 
   const MAX_LOGS = 60;
-  const addLog  = (msg, tag='default') => setLogs(l=>{const base=l.length>0&&l[0].tag==='__CLEAR__'?[]:l;const n=[...base,{msg,tag}];return n.length>MAX_LOGS?n.slice(-MAX_LOGS):n;});
-  const addLogs = (arr) => setLogs(l=>{const base=l.length>0&&l[0].tag==='__CLEAR__'?[]:l;const n=[...base,...arr.map(([msg,tag='default'])=>({msg,tag}))];return n.length>MAX_LOGS?n.slice(-MAX_LOGS):n;});
+  const addLog  = (msg, tag='default') => setLogs(l=>{const base=l.length>0&&l[0].tag==='__CLEAR__'?[]:l;const n=[...base,{msg:resolvePregPlaceholders(msg,player),tag}];return n.length>MAX_LOGS?n.slice(-MAX_LOGS):n;});
+  const addLogs = (arr) => setLogs(l=>{const base=l.length>0&&l[0].tag==='__CLEAR__'?[]:l;const n=[...base,...arr.map(([msg,tag='default'])=>({msg:resolvePregPlaceholders(msg,player),tag}))];return n.length>MAX_LOGS?n.slice(-MAX_LOGS):n;});
   const addSep  = () => setLogs([{msg:'',tag:'__CLEAR__'}]);
 
 
