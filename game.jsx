@@ -3854,10 +3854,9 @@ const TowerGame = () => {
     // 中出文本
     const isBathDefeat = gs === 'bathroom';
     const enemyName = enemy?.name||'他';
-    // 通用失憶開場：柯妤潔想不起昏倒前發生什麼（讓死魚戰敗文本萬用）
-    addLog('💫 ' + pick(SCENE_TEXTS.sexDefeatedAmnesia), 'bad');
     if (isBathDefeat) {
-      // 浴室死魚：橋接(被全裸拖到房間床上，不含插入) → 串接房間死魚(無套內射昏死)
+      // 浴室死魚：昏倒提示 → 浴室橋接(被全裸拖到房間床上，不含插入) → 串接房間死魚(無套內射昏死)
+      addLog('🛁 柯妤潔在浴室昏倒了……', 'bad');
       addLog(pick(SCENE_TEXTS.bathSexDefeated).replace(/{E}/g, enemyName), 'bad');
     }
     addLog(pick(SCENE_TEXTS.roomSexDefeated).replace(/{E}/g, enemyName), 'bad');
