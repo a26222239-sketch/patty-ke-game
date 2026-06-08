@@ -1742,6 +1742,22 @@ const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, o
   const BackToLobby = () => (
     <button onClick={()=>setArea('lobby')} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg font-bold">↩ 返回門口</button>
   );
+  const JEWELRY = ['ear','navel','areola','labia'];  // 飾品 slot（其餘為服飾）
+  const itemRow = (item,i) => item.sold ? (
+    <div key={item.slot+i} className="bg-slate-900/40 rounded-lg p-3 border border-slate-800/40 flex justify-between items-center opacity-50">
+      <div><p className="text-slate-500 text-sm">{CAT[item.slot]||item.slot}</p><p className="text-slate-600 text-xs">目前暫無進貨</p></div>
+      <span className="text-slate-600 text-xs">─</span>
+    </div>
+  ) : (
+    <div key={item.id} className="bg-slate-800/60 rounded-lg p-3 border border-slate-700/40 flex justify-between items-center">
+      <div><p className="text-slate-200 text-sm font-bold">{item.name}</p><p className={S.textXsGray}>{CAT[item.type||item.slot]} · 魅惑+{item.charm}</p></div>
+      <button onClick={()=>onToggleCart(item)} disabled={player.wardrobe.includes(item.id)}
+        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${player.wardrobe.includes(item.id)?'bg-slate-700 text-slate-500':cart.find(x=>x.id===item.id)?'bg-green-700 hover:bg-green-600 text-white':'bg-yellow-600 hover:bg-yellow-500 text-white'}`}>
+        {player.wardrobe.includes(item.id)?'已擁有':cart.find(x=>x.id===item.id)?'✓ 放回':`拿起 ${item.price}G`}
+      </button>
+    </div>
+  );
+  const cartFooter = cart.length>0 ? <div className="text-center text-xs text-amber-300">🛒 已拿 {cart.length} 件・共 {cartTotal}G（到櫃台結帳）</div> : null;
   // 櫃台：老闆 + 保險套
   if (area==='counter') return (
     <div className="space-y-3">
@@ -1779,22 +1795,19 @@ const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, o
     <div className="space-y-3">
       <div className="flex justify-between items-center"><h3 className="text-yellow-300 font-bold">🛍 服飾區</h3>{gold}</div>
       <div className="grid grid-cols-1 gap-2">
-        {shop.map((item,i)=>item.sold?(
-          <div key={item.slot+i} className="bg-slate-900/40 rounded-lg p-3 border border-slate-800/40 flex justify-between items-center opacity-50">
-            <div><p className="text-slate-500 text-sm">{CAT[item.slot]||item.slot}</p><p className="text-slate-600 text-xs">目前暫無進貨</p></div>
-            <span className="text-slate-600 text-xs">─</span>
-          </div>
-        ):(
-          <div key={item.id} className="bg-slate-800/60 rounded-lg p-3 border border-slate-700/40 flex justify-between items-center">
-            <div><p className="text-slate-200 text-sm font-bold">{item.name}</p><p className={S.textXsGray}>{CAT[item.type||item.slot]} · 魅惑+{item.charm}</p></div>
-            <button onClick={()=>onToggleCart(item)} disabled={player.wardrobe.includes(item.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${player.wardrobe.includes(item.id)?'bg-slate-700 text-slate-500':cart.find(x=>x.id===item.id)?'bg-green-700 hover:bg-green-600 text-white':'bg-yellow-600 hover:bg-yellow-500 text-white'}`}>
-              {player.wardrobe.includes(item.id)?'已擁有':cart.find(x=>x.id===item.id)?'✓ 放回':`拿起 ${item.price}G`}
-            </button>
-          </div>
-        ))}
+        {shop.filter(it=>!JEWELRY.includes(it.slot)).map(itemRow)}
       </div>
-      {cart.length>0 && <div className="text-center text-xs text-amber-300">🛒 已拿 {cart.length} 件・共 {cartTotal}G（到櫃台結帳）</div>}
+      {cartFooter}
+      <BackToLobby/>
+    </div>
+  );
+  if (area==='jewelry') return (
+    <div className="space-y-3">
+      <div className="flex justify-between items-center"><h3 className="text-pink-300 font-bold">💍 飾品區</h3>{gold}</div>
+      <div className="grid grid-cols-1 gap-2">
+        {shop.filter(it=>JEWELRY.includes(it.slot)).map(itemRow)}
+      </div>
+      {cartFooter}
       <BackToLobby/>
     </div>
   );
@@ -1804,9 +1817,10 @@ const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, o
       <div className="flex justify-between items-center"><h3 className="text-yellow-300 font-bold">🏪 商店・門口</h3>{gold}</div>
       <div className="bg-slate-800/40 rounded-lg p-3 border border-amber-900/30 text-center text-sm" style={{color:'#c0a070'}}>店裡此刻{footTraffic||'空無一人'}……</div>
       <div className="grid grid-cols-2 gap-2">
-        <button onClick={()=>setArea('counter')} className="py-3 bg-slate-800 hover:bg-slate-700 text-amber-200 rounded-lg font-bold">🧾 櫃台</button>
         <button onClick={()=>setArea('clothing')} className="py-3 bg-slate-800 hover:bg-slate-700 text-yellow-200 rounded-lg font-bold">🛍 服飾區</button>
+        <button onClick={()=>setArea('jewelry')} className="py-3 bg-slate-800 hover:bg-slate-700 text-pink-200 rounded-lg font-bold">💍 飾品區</button>
       </div>
+      <button onClick={()=>setArea('counter')} className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-amber-200 rounded-lg font-bold">🧾 櫃台{cart.length>0?`（🛒${cart.length}）`:''}</button>
       <button onClick={onBack} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg font-bold">🚪 離開（回街道）</button>
     </div>
   );
