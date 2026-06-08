@@ -2590,10 +2590,13 @@ const TowerGame = () => {
     if (actionRef.current || !bossOffer) return;
     actionRef.current = true;
     const { svc, off } = bossOffer;
-    const scene = (SCENE_TEXTS.shopForeplay[svc.key]) || [];
+    // 比照娼院前戲：oral(mouth型)用完整 swallow 池；flash/hand 走 spill 主文本 + 一律追加 swallowExtra（此處默認吞精）
+    const pool = SCENE_TEXTS.shopForeplay[svc.key] || {};
+    let tpl = pool.swallow ? pick(pool.swallow) : pick(pool.spill);
+    if (!pool.swallow && pool.swallowExtra && pool.swallowExtra.length) tpl += pick(pool.swallowExtra);
     setShopDiscount(d => Math.max(d, off));
     setPlayer(p=>({...p, discountAttemptDay:p.days}));     // 服務完成用掉今天機會
-    addLog('💋 ' + pick(scene).replace(/{BOSS}/g, SHOPKEEPER_NAME).replace(/{ZHE}/g, formatZhe(off)), 'story');
+    addLog('💋 ' + tpl.replace(/{BOSS}/g, SHOPKEEPER_NAME), 'story');
     addLog(`💳 結帳折扣已套用：打 ${formatZhe(off)} 折（省 ${Math.round(off*100)}%）。`, 'gold');
     setBossOffer(null);
     actionRef.current = false;
