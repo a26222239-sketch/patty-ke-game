@@ -3627,7 +3627,7 @@ const TowerGame = () => {
     );
   }
   if (gs==='status') return <StatusPanel player={player} onBack={()=>setGs('explore')} />;
-  if (gs==='shop') return <ShopPanel player={player} shop={shop} onBuy={doBuyItem} onBuyCondom={doBuyCondom} onBack={()=>{setPlayer(p=>({...p,shopSessionOpen:false}));setGs('explore');}} />;
+  if (gs==='shop') return <ShopPanel player={player} shop={shop} onBuy={doBuyItem} onBuyCondom={doBuyCondom} onBack={()=>{setPlayer(p=>({...p,shopSessionOpen:false}));setGs('street');}} />;
   if (gs==='birth') return (
     <div className="space-y-3">
       <div className="bg-pink-900/30 rounded-xl p-4 border border-pink-700/40 text-center">
@@ -3642,7 +3642,24 @@ const TowerGame = () => {
     </div>
   );
   if (gs==='wardrobe') return <WardrobePanel player={player} onEquip={doEquip} onUnequip={doUnequip} onBack={()=>setGs('explore')}/>;
-  if (gs==='piercingShop') return <PiercingShopPanel player={player} tattooDraft={tattooDraft} setTattooDraft={setTattooDraft} onBuyPiercing={doBuyPiercing} onTattoo={doTattoo} onTrimHair={doTrimHair} onBack={()=>setGs('explore')}/>;
+  if (gs==='piercingShop') return <PiercingShopPanel player={player} tattooDraft={tattooDraft} setTattooDraft={setTattooDraft} onBuyPiercing={doBuyPiercing} onTattoo={doTattoo} onTrimHair={doTrimHair} onBack={()=>setGs('street')}/>;
+  // 街道（外出後）：商店/刺青店在此；尋找路人＝未來野戰系統的入口（地點與尋找路人是兩件事，這裡先放尋找路人佔位）
+  if (gs==='street') {
+    const sh = Math.floor(player.timeMinutes/60)%24; const shopOpen = sh>=9 && sh<21;
+    return (
+      <div className="space-y-2">
+        <div className="text-center text-sm py-1" style={{color:'#c0a070'}}>🏙 你走在街道上……</div>
+        <div className="grid grid-cols-2 gap-2">
+          <button onClick={doOpenShop} className={`${shopOpen ? BR.primary : BR.dis} w-full`} style={shopOpen ? BR.primaryStyle : BR.disStyle}>{shopOpen?'🏪 商店':'🔒 商店已關'}</button>
+          <button onClick={()=>{setPlayer(p=>({...addMinutes(p,10), hp:Math.max(0,p.hp-3)}));setGs('piercingShop');}}
+            className={BR.ghost} style={{...BR.ghostStyle, color:'#c090e0', borderColor:'#6030a0', borderBottomColor:'#8040c0'}}>🎨 刺青店</button>
+        </div>
+        <button onClick={()=>addLog('🚧 野戰系統開發中，敬請期待……','hint')}
+          className={`w-full ${BR.ghost}`} style={{...BR.ghostStyle, color:'#90c878', borderColor:'#3a6020', borderBottomColor:'#508030'}}>🧍 尋找路人</button>
+        <button onClick={()=>{setPlayer(p=>addMinutes(p,5));setGs('explore');}} className={`w-full ${BR.ghost}`} style={BR.ghostStyle}>🏠 回家</button>
+      </div>
+    );
+  }
   if (gs==='saveLoad') return <SaveLoadPanel slots={SAVE_SLOTS} readMeta={readSaveMeta} onSave={doSave} onLoad={doLoad} onDelete={doDeleteSave} onBack={()=>setGs('explore')} onExport={doExportCurrent} onImport={doImportText}/>;
 
   // 做愛保險套詢問
@@ -3784,22 +3801,14 @@ const TowerGame = () => {
         </div>
       )}
       <div className="grid grid-cols-2 gap-2">
-        {(()=>{const _h=Math.floor(player.timeMinutes/60)%24; const _open=_h>=9&&_h<21; return (
-          <button onClick={doOpenShop}
-            className={`${_open ? BR.primary : BR.dis} w-full`}
-            style={_open ? BR.primaryStyle : BR.disStyle}>
-            {_open?'🏪 商店':'🔒 商店已關'}
-          </button>
-        );})()}
+        <button onClick={()=>{setPlayer(p=>addMinutes(p,5));setGs('street');}} className={BR.primary} style={BR.primaryStyle}>🚶 外出</button>
         <button onClick={()=>setGs('wardrobe')} className={BR.ghost} style={BR.ghostStyle}>👗 衣物</button>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <button onClick={()=>{setPlayer(p=>({...addMinutes(p,10), hp:Math.max(0,p.hp-3)}));setGs('piercingShop');}}
-          className={BR.ghost} style={{...BR.ghostStyle, color:'#c090e0', borderColor:'#6030a0', borderBottomColor:'#8040c0'}}>🎨 刺青店</button>
+        <button onClick={()=>{setPlayer(p=>({...addMinutes(p,5), bathSavedClothes:{...p.clothes}}));setGs('bathroom');}}
+          className={`w-full ${BB.primary}`} style={BB.primaryStyle}>🛁 浴室</button>
         <button onClick={()=>setGs('saveLoad')} className={BR.ghost} style={BR.ghostStyle}>💾 存讀檔</button>
       </div>
-      <button onClick={()=>{setPlayer(p=>({...addMinutes(p,5), bathSavedClothes:{...p.clothes}}));setGs('bathroom');}}
-        className={`w-full ${BB.primary}`} style={BB.primaryStyle}>🛁 浴室</button>
     </div>
   );
 };
