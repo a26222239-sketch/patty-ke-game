@@ -1735,10 +1735,18 @@ const getFootTraffic = (timeMinutes) => {
   return FOOT_TRAFFIC_LABELS[v<=20?0 : v<=40?1 : v<=60?2 : v<=80?3 : 4];
 };
 const SHOPKEEPER_NAME = '阿坤';
+// 索取折扣：為老闆服務換結帳折扣。框架用佔位值；折扣%/服務場景文本/時間體力消耗 之後再設定
+const SHOP_DISCOUNT_SERVICES = [
+  { key:'flash', label:'露出胸部', discount:0.05 },
+  { key:'hand',  label:'手交',     discount:0.15 },
+  { key:'oral',  label:'口交',     discount:0.30 },
+];
 
-const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, onBack, area, setArea, footTraffic, onTalkBoss}) => {
+const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, onBack, area, setArea, footTraffic, onTalkBoss, discount=0, services=[], onBossService}) => {
+  const [bossMenu, setBossMenu] = React.useState(false);
   const gold = <span className="text-yellow-300 text-lg font-bold">💰 {player.gold}G</span>;
   const cartTotal = cart.reduce((s,i)=>s+i.price, 0);
+  const payTotal = Math.round(cartTotal * (1 - discount));
   const BackToLobby = () => (
     <button onClick={()=>setArea('lobby')} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg font-bold">↩ 返回門口</button>
   );
@@ -1762,19 +1770,40 @@ const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, o
   if (area==='counter') return (
     <div className="space-y-3">
       <div className="flex justify-between items-center"><h3 className="text-yellow-300 font-bold">🧾 櫃台</h3>{gold}</div>
-      <button onClick={onTalkBoss} className="w-full bg-slate-800/70 rounded-lg p-3 border border-amber-900/50 flex items-center gap-3 hover:bg-slate-800 transition-colors text-left">
+      <button onClick={()=>{ if(cart.length>0) setBossMenu(v=>!v); else onTalkBoss(); }}
+        className="w-full bg-slate-800/70 rounded-lg p-3 border border-amber-900/50 flex items-center gap-3 hover:bg-slate-800 transition-colors text-left">
         <span className="text-3xl">🧔</span>
-        <div><p className="text-amber-200 text-sm font-bold">老闆 {SHOPKEEPER_NAME}</p><p className="text-slate-500 text-xs">點我聊聊……</p></div>
+        <div className="flex-1"><p className="text-amber-200 text-sm font-bold">老闆 {SHOPKEEPER_NAME}</p>
+          <p className="text-slate-500 text-xs">{cart.length>0 ? (bossMenu?'收起…':'點我索取折扣…') : '點我聊聊…'}</p></div>
+        {cart.length>0 && <span className="text-amber-300 text-xs">{bossMenu?'▴':'▾'}</span>}
       </button>
+      {bossMenu && cart.length>0 && (
+        <div className="rounded-lg p-3 border border-pink-900/50 space-y-2" style={{background:'#1c0f16'}}>
+          <p className="text-pink-300 text-xs font-bold">💋 索取折扣（為老闆服務換折扣）</p>
+          {services.map(svc=>(
+            <button key={svc.key} onClick={()=>{ onBossService(svc); setBossMenu(false); }}
+              className="w-full flex justify-between items-center px-3 py-2 rounded-lg bg-pink-900/30 hover:bg-pink-800/40 text-pink-100 text-sm font-bold">
+              <span>{svc.label}</span><span className="text-pink-300 text-xs">折 {Math.round(svc.discount*100)}%</span>
+            </button>
+          ))}
+          <p className="text-slate-600 text-[10px]">（服務場景／消耗／折扣數值之後設定）</p>
+        </div>
+      )}
       <div className="bg-slate-800/60 rounded-lg p-3 border border-amber-900/40">
         <p className="text-amber-200 text-sm font-bold mb-1">🛒 購物籃</p>
         {cart.length===0 ? <p className="text-slate-500 text-xs">還沒拿任何東西</p> : cart.map(i=>(
           <div key={i.id} className="flex justify-between text-xs text-slate-300"><span>{i.name}</span><span>{i.price}G</span></div>
         ))}
-        {cart.length>0 && <div className="flex justify-between text-sm font-bold text-yellow-300 mt-1 pt-1 border-t border-slate-700"><span>合計</span><span>{cartTotal}G</span></div>}
-        <button onClick={onCheckout} disabled={cart.length===0 || player.gold<cartTotal}
-          className={`w-full mt-2 py-2 rounded-lg text-sm font-bold transition-colors ${cart.length===0||player.gold<cartTotal?'bg-slate-800 text-slate-600':'bg-yellow-600 hover:bg-yellow-500 text-white'}`}>
-          💳 結帳{cart.length>0?` ${cartTotal}G`:''}{player.gold<cartTotal&&cart.length>0?'（金幣不足）':''}
+        {cart.length>0 && (
+          <div className="mt-1 pt-1 border-t border-slate-700">
+            {discount>0 && <div className="flex justify-between text-xs text-slate-400"><span>小計</span><span className="line-through">{cartTotal}G</span></div>}
+            {discount>0 && <div className="flex justify-between text-xs text-pink-300"><span>老闆折扣</span><span>-{Math.round(discount*100)}%</span></div>}
+            <div className="flex justify-between text-sm font-bold text-yellow-300"><span>應付</span><span>{payTotal}G</span></div>
+          </div>
+        )}
+        <button onClick={onCheckout} disabled={cart.length===0 || player.gold<payTotal}
+          className={`w-full mt-2 py-2 rounded-lg text-sm font-bold transition-colors ${cart.length===0||player.gold<payTotal?'bg-slate-800 text-slate-600':'bg-yellow-600 hover:bg-yellow-500 text-white'}`}>
+          💳 結帳{cart.length>0?` ${payTotal}G`:''}{player.gold<payTotal&&cart.length>0?'（金幣不足）':''}
         </button>
       </div>
       <div className="bg-slate-800/60 rounded-lg p-3 border border-cyan-900/40 flex justify-between items-center">
@@ -2073,6 +2102,7 @@ const TowerGame = () => {
   const [gs,      setGs]      = useState('title');
   const [shopArea, setShopArea] = useState('lobby');  // 商店內裝子區：lobby(門口)/counter(櫃台)/clothing(服飾區)
   const [cart, setCart] = useState([]);  // 購物籃：服飾區「拿起」的物品，到櫃台結帳才扣款
+  const [shopDiscount, setShopDiscount] = useState(0);  // 跟老闆服務換來的結帳折扣(0~1)
   const [shop,    setShop]    = useState([]);
   const [tattooDraft, setTattooDraft] = useState({loc:'',size:'',content:''});
   const [showRestMenu, setShowRestMenu] = useState(false);
@@ -2481,6 +2511,7 @@ const TowerGame = () => {
     setPlayer(p=>({...addMinutes(restockShop(p),15), shopSessionOpen:true}));
     setShopArea('lobby');
     setCart([]);
+    setShopDiscount(0);
     setGs('shop');
     actionRef.current = false;
 
@@ -2489,11 +2520,22 @@ const TowerGame = () => {
   const toggleCart = (item) => {
     setCart(c => c.find(x=>x.id===item.id) ? c.filter(x=>x.id!==item.id) : [...c, item]);
   };
-  // 櫃台結帳：一次付清購物籃，扣款並入手
+  // 索取折扣：為老闆做服務換結帳折扣（框架；服務場景/時間體力/折扣規則之後設定）
+  const doBossService = (svc) => {
+    if (actionRef.current) return;
+    if (cart.length === 0) { addLog('🛒 購物籃是空的，先拿點東西吧。','hint'); return; }
+    actionRef.current = true;
+    // TODO: 之後接服務場景文本、時間/體力消耗、折扣規則（目前取較高者）
+    setShopDiscount(d => Math.min(0.9, Math.max(d, svc.discount)));
+    addLog(`💋 柯妤潔為老闆 ${SHOPKEEPER_NAME} 提供了【${svc.label}】，換得結帳 ${Math.round(svc.discount*100)}% 折扣。（服務細節開發中……）`, 'good');
+    actionRef.current = false;
+  };
+  // 櫃台結帳：一次付清購物籃，套用老闆折扣，扣款並入手
   const doCheckout = () => {
     if (actionRef.current) return;
     if (cart.length === 0) { addLog('🛒 購物籃是空的。','hint'); return; }
-    const total = cart.reduce((s,i)=>s+i.price, 0);
+    const raw = cart.reduce((s,i)=>s+i.price, 0);
+    const total = Math.round(raw * (1 - shopDiscount));
     if (player.gold < total) { addLog(`💰 金幣不足，結帳需 ${total}G。`,'bad'); return; }
     actionRef.current = true;
     const ids = cart.map(i=>i.id);
@@ -2505,8 +2547,9 @@ const TowerGame = () => {
       setTimeout(()=>setShop(makeShop(newWardrobe, newProg)),0);
       return {...p, gold:p.gold-total, wardrobe:newWardrobe, shopProgress:newProg};
     });
-    addLog(`💳 結帳：${names}（-${total}G）`,'gold');
+    addLog(`💳 結帳：${names}（-${total}G${shopDiscount>0?`，已折 ${Math.round(shopDiscount*100)}%`:''}）`,'gold');
     setCart([]);
+    setShopDiscount(0);
     actionRef.current = false;
   };
   const doBuyCondom = () => {
@@ -3693,8 +3736,9 @@ const TowerGame = () => {
   if (gs==='status') return <StatusPanel player={player} onBack={()=>setGs('explore')} />;
   if (gs==='shop') return <ShopPanel player={player} shop={shop} cart={cart} onToggleCart={toggleCart} onCheckout={doCheckout} onBuyCondom={doBuyCondom}
     area={shopArea} setArea={setShopArea} footTraffic={getFootTraffic(player.timeMinutes)}
+    discount={shopDiscount} services={SHOP_DISCOUNT_SERVICES} onBossService={doBossService}
     onTalkBoss={()=>addLog(`老闆 ${SHOPKEEPER_NAME} 瞇眼笑了笑：「妹妹今天想找點什麼？」（互動開發中……）`,'hint')}
-    onBack={()=>{setCart([]);setPlayer(p=>({...p,shopSessionOpen:false}));setGs('street');}} />;
+    onBack={()=>{setCart([]);setShopDiscount(0);setPlayer(p=>({...p,shopSessionOpen:false}));setGs('street');}} />;
   if (gs==='birth') return (
     <div className="space-y-3">
       <div className="bg-pink-900/30 rounded-xl p-4 border border-pink-700/40 text-center">
