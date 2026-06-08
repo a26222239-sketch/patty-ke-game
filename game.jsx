@@ -3652,7 +3652,7 @@ const TowerGame = () => {
         <div className="text-xs font-bold pl-1" style={{color:'#8a6840'}}>地　點</div>
         <div className="grid grid-cols-3 gap-2">
           <button onClick={doOpenShop} className={`${shopOpen ? BR.primary : BR.dis} w-full text-sm`} style={shopOpen ? BR.primaryStyle : BR.disStyle}>{shopOpen?'🏪 商店':'🔒 打烊'}</button>
-          <button onClick={()=>{setPlayer(p=>({...addMinutes(p,10), hp:Math.max(0,p.hp-3)}));setGs('piercingShop');}}
+          <button onClick={()=>{setPlayer(p=>addMinutes(p,10));setGs('piercingShop');}}
             className={`w-full text-sm ${BR.ghost}`} style={{...BR.ghostStyle, color:'#c090e0', borderColor:'#6030a0', borderBottomColor:'#8040c0'}}>🎨 刺青店</button>
           <button onClick={()=>addLog('🚽 公廁（野戰地點）開發中……','hint')}
             className={`w-full text-sm ${BR.ghost}`} style={{...BR.ghostStyle, color:'#a0a8b0', borderColor:'#3a4048', borderBottomColor:'#505860'}}>🚽 公廁</button>
