@@ -1801,7 +1801,7 @@ const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, o
         className={`w-full py-3 rounded-lg font-bold ${player.gold<theftFine?'bg-slate-800 text-slate-600':'bg-yellow-700 hover:bg-yellow-600 text-white'}`}>
         💸 賠償 {theftFine}G（商品價的 50%）{player.gold<theftFine?'（金幣不足）':''}
       </button>
-      <button onClick={onMeatComp} className="w-full py-3 bg-pink-800 hover:bg-pink-700 text-white rounded-lg font-bold">🍖 肉償（以身體抵償）</button>
+      <button onClick={onMeatComp} className="w-full py-3 bg-pink-800 hover:bg-pink-700 text-white rounded-lg font-bold">💋 肉償（以身體抵償）</button>
       <button onClick={onGotoJail} className="w-full py-3 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg font-bold">🚓 拒絕 → 被送警局關押 48 小時</button>
     </div>
   );
@@ -2659,12 +2659,12 @@ const TowerGame = () => {
     addLog('🛒 柯妤潔把購物籃裡的東西一一放回架上，空手離開了商店。', 'hint');
     leaveShop();
   };
-  // 竊盜判定：成功率 = 人流/100 × 0.5（人越多越不易被發現，上限 50%、不可當賺錢手段）
+  // 竊盜判定：成功率 = 人流/100 × 0.4（人越多越不易被發現，上限 40%、不可當賺錢手段）
   const doAttemptTheft = () => {
     if (actionRef.current || cart.length === 0) return;
     actionRef.current = true;
     const traffic = getFootTrafficValue(player.timeMinutes) ?? 0;
-    const chance = Math.min(0.5, traffic/100 * 0.5);
+    const chance = Math.min(0.4, traffic/100 * 0.4);
     if (Math.random() < chance) {
       const ids = cart.map(i=>i.id);
       const names = cart.map(i=>i.name).join('、');
@@ -2702,7 +2702,7 @@ const TowerGame = () => {
   const doMeatCompensate = () => {
     if (actionRef.current) return;
     actionRef.current = true;
-    addLog(`🍖 柯妤潔提出用身體向老闆 ${SHOPKEEPER_NAME} 抵償……（肉償細節開發中……）老闆悻悻收手，放她離開。`, 'story');
+    addLog(`💋 柯妤潔提出用身體向老闆 ${SHOPKEEPER_NAME} 抵償……（肉償細節開發中……）老闆悻悻收手，放她離開。`, 'story');
     addLog('🛒 購物籃的商品被收回貨架。', 'hint');
     actionRef.current = false;
     leaveShop();
