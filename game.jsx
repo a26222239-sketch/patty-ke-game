@@ -2734,13 +2734,14 @@ const TowerGame = () => {
       actionRef.current = false;
     }
   };
-  // 拒絕賠償 → 送警局強制關押 48 小時，商品歸還
+  // 拒絕賠償 → 送警局：當下商品即歸還，隨後強制關押 48 小時
   const doGotoJail = () => {
     if (actionRef.current) return;
     actionRef.current = true;
     addLog('🚓 ' + pick(SCENE_TEXTS.shopTheftJail).replace(/{BOSS}/g, SHOPKEEPER_NAME), 'bad');
-    addLog('🔒 柯妤潔被扭送警局，強制關押 48 小時。購物籃的商品全數歸還商店。', 'bad');
-    setPlayer(p=>addMinutes({...p}, 48*60));   // 推進 48 小時
+    addLog('🛒 購物籃的商品當場全數歸還商店。', 'hint');               // 送辦當下即歸還
+    addLog('🔒 柯妤潔被帶回派出所，依竊盜送辦、強制留置 48 小時無法離開。', 'bad');
+    setPlayer(p=>addMinutes({...p}, 48*60));   // 隨後推進 48 小時
     actionRef.current = false;
     leaveShop();
   };
