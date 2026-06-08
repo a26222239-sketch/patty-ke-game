@@ -797,6 +797,7 @@ const INITIAL_PLAYER = {
   shopSessionOpen: false, // 商店連續開啟標記（進商店時 true，離開時 false）
   shopProgress: {top:0,bra:0,bottom:0,panties:0,ear:0,navel:0,areola:0,labia:0,socks:0,shoes:0},
   discountAttemptDay: 0,  // 上次索取折扣的天數（== 當前 days 表示今天已用過機會；0=從未）
+  bossSatedDay: 0,        // 老闆肉償爽夠的天數（== 當前 days 表示今天老闆已滿足、不再服務）
   bathSavedClothes: null,
   // 體毛系統：三部位等級 0-3（光滑/稀疏/濃密/雜草叢生），起始全為稀疏(1)
   // 每 5 天 +1 級（在 doRest 內推進），最高到 3（雜草叢生）
@@ -1265,6 +1266,35 @@ const genEnemy = (player) => {
     hairPrefSatisfied: false,       // 是否已觸發過喜好命中
   };
 
+};
+
+// 肉償：老闆「阿坤」作為特殊客人。體力/精液比一般客人高一些；不包時間（無 serviceEndTime→不會時間到退場）；
+// 不付錢（heldGold=0、minFee=0→離場結算 0G，但名氣與熟練度照常累積）；做愛一律無套。
+const genBoss = (player) => {
+  const semenBase = Math.round(vary(60, 0.15));        // 一般客人 20~40，老闆高一些
+  const enemyHp   = Math.round(vary(650, 0.15));       // 體力偏高、耐操
+  const baseArousal = 60;
+  const prefKeys = ['hand','mouth','boob','butt','leg'];
+  const preference = prefKeys[Math.floor(Math.random()*prefKeys.length)];
+  const sexPref = Math.random()<0.5 ? 'vagina' : 'anal';
+  const hairPart = pick(HAIR_PARTS);
+  const hairLevel = pick(['smooth','sparse','thick','wild']);
+  return {
+    name: SHOPKEEPER_NAME, isBoss:true, tierIdx:4,
+    baseSemen:semenBase, semenVolume:semenBase,
+    arousal:baseArousal, maxArousal:baseArousal,
+    hp:enemyHp, maxHp:enemyHp,
+    serviceTime:0, heldGold:0, minFee:0, ratePerMin:0, baseFee:0,   // 不包時間、不付錢
+    preference, mainActPref:sexPref,
+    phase:'combat', foreplayCount:0, foreplayRejected:false,
+    bathInviteCount:0, bathLocked:true,                              // 休息區無浴室
+    chargedServices:[], accumulatedFee:0,
+    undressedDuringForeplay:{},
+    bathServiceCount:0, bathedThisVisit:false,
+    revealedPreference:false,
+    condomEquipped:false, pendingHole:null, condomMode:null,
+    hairPref:{ part:hairPart, level:hairLevel }, hairPrefSatisfied:false,
+  };
 };
 
 
@@ -1809,16 +1839,6 @@ const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, o
       <button onClick={onGotoJail} className="w-full py-3 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg font-bold">🚓 拒絕 → 被送警局關押 48 小時</button>
     </div>
   );
-  if (theftPhase === 'meatRest') return (
-    <div className="space-y-3">
-      <div className="flex justify-between items-center"><h3 className="text-pink-300 font-bold">🚪 休息區</h3>{gold}</div>
-      <div className="bg-pink-950/30 rounded-lg p-3 border border-pink-800/40 text-sm text-pink-200 leading-relaxed">
-        老闆 {SHOPKEEPER_NAME} 把柯妤潔帶進了平時不對外開放的休息區……
-        <br/><span className="text-slate-500 text-xs">（肉償的詳細內容開發中，敬請期待）</span>
-      </div>
-      <button onClick={onLeave} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg font-bold">↩ 離開（回街道）</button>
-    </div>
-  );
   const BackToLobby = () => (
     <button onClick={()=>setArea('lobby')} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg font-bold">↩ 返回門口</button>
   );
@@ -2190,7 +2210,7 @@ const TowerGame = () => {
   const [cart, setCart] = useState([]);  // 購物籃：服飾區「拿起」的物品，到櫃台結帳才扣款
   const [shopDiscount, setShopDiscount] = useState(0);  // 跟老闆服務換來的結帳折扣(0~1)
   const [bossOffer, setBossOffer] = useState(null);     // 老闆已接受、待柯妤潔決定的折扣 {svc, off, traffic}
-  const [theftPhase, setTheftPhase] = useState(null);   // 竊盜流程：null / 'warn'(離開警告) / 'caught'(被逮·賠償選擇) / 'meatRest'(肉償成功進休息區)
+  const [theftPhase, setTheftPhase] = useState(null);   // 竊盜流程：null / 'warn'(離開警告) / 'caught'(被逮·賠償選擇)
   const [meatFailed, setMeatFailed] = useState(false);  // 肉償判定失敗（老闆拒絕、堅持賠錢）→ 隱藏肉償鈕
   const [shop,    setShop]    = useState([]);
   const [tattooDraft, setTattooDraft] = useState({loc:'',size:'',content:''});
@@ -2275,6 +2295,7 @@ const TowerGame = () => {
       }
     }
     if (bonusGold>0) addLog(`💰 獲得 ${bonusGold}G　🌟 名氣 +${fameGain}`,'gold');
+    else if (e.isBoss) addLog(`🌟 名氣 +${fameGain}`,'gold');
     // 恢復入場時的完整衣物狀態
     const restoredClothes = e.entryClothes || restoreUndressed(e, player);
     const putBackSlots = Object.keys(restoredClothes).filter(slot=>
@@ -2294,6 +2315,7 @@ const TowerGame = () => {
       fame:(p.fame||0)+fameGain,
       clothes:restoredClothes,
       semenStains: p.semenStains || {},
+      ...(e.isBoss ? {bossSatedDay:p.days} : {}),   // 老闆爽夠，今天不再服務
     }));
     leavingRef.current = false;
     setEnemy(null);
@@ -2301,6 +2323,11 @@ const TowerGame = () => {
     setShowSexMenu(false);
     setShowRestMenu(false);
     if (gs==='bathroom') setGs('explore');
+    if (e.isBoss) {   // 肉償結束 → 回到商店門口（可繼續購物，老闆不再服務）
+      addLog(`🚪 老闆 ${SHOPKEEPER_NAME} 心滿意足地拍了拍柯妤潔的臉，把她送回店門口。`, 'hint');
+      setShopArea('lobby');
+      setGs('shop');
+    }
 
   };
 
@@ -2616,6 +2643,7 @@ const TowerGame = () => {
   const doAskDiscount = (svc) => {
     if (actionRef.current || bossOffer) return;
     if (cart.length === 0) { addLog('🛒 購物籃是空的，先拿點東西吧。','hint'); return; }
+    if (player.bossSatedDay === player.days) { addLog('😏 老闆今天已經被妳伺候到爽夠了，擺擺手沒了興致。','hint'); return; }
     if (player.discountAttemptDay === player.days) { addLog('🚫 老闆今天已經不肯再冒險了，明天再來吧。','hint'); return; }
     actionRef.current = true;
     const traffic = getFootTrafficValue(player.timeMinutes) ?? 0;
@@ -2716,7 +2744,7 @@ const TowerGame = () => {
   };
   // 肉償：柯妤潔暗示用身體抵償 → 依魅惑度判定。
   //   失敗：老闆拒絕、堅持賠錢（隱藏肉償鈕，只剩賠償/警局）。
-  //   成功：商品歸還、自動進入平時不開放的「休息區」（內容待設計）。
+  //   成功：商品歸還、自動進入平時不開放的「休息區」（玩法同娼館）。
   const doMeatCompensate = () => {
     if (actionRef.current) return;
     actionRef.current = true;
@@ -2724,15 +2752,30 @@ const TowerGame = () => {
     const charm = calcCharm(player).total;
     if (Math.random() < meatCompChance(charm)) {
       addLog(`💋 老闆 ${SHOPKEEPER_NAME} 嚥了口口水，鬆開手、把柯妤潔往店內深處帶去……`, 'good');
-      addLog('🚪 平時不對外開放的【休息區】，今天為了肉償破例打開了。（休息區內容開發中……）', 'hint');
-      setCart([]);                 // 購物籃商品歸還貨架
-      setTheftPhase('meatRest');   // 進入休息區（不離店）
+      addLog('🚪 平時不對外開放的【休息區】，今天為了肉償破例打開了。', 'hint');
+      setCart([]);                  // 購物籃商品歸還貨架
+      setShopDiscount(0); setBossOffer(null); setTheftPhase(null); setMeatFailed(false);
+      setEnemy(null);
+      setGs('restArea');            // 進入休息區（玩法同娼館）
       actionRef.current = false;
     } else {
       addLog('🙅 ' + pick(SCENE_TEXTS.shopMeatRefuse).replace(/{BOSS}/g, SHOPKEEPER_NAME), 'bad');
       setMeatFailed(true);         // 肉償失敗，老闆堅持賠錢
       actionRef.current = false;
     }
+  };
+  // 休息區：開始/繼續肉償（生成老闆作為客人，玩法同娼館；接客鈕→肉償）
+  const doMeatService = () => {
+    if (enemy) return;
+    if (leavingRef.current) return;
+    if (actionRef.current) return;
+    actionRef.current = true;
+    const e = genBoss(player);
+    addSep();
+    addLog(`🚪 休息區的門在身後關上。老闆 ${SHOPKEEPER_NAME} 一臉得意地逼近，掐著柯妤潔的下巴：「敢偷我的東西……今天就用妳這身子，好好賠給我吧。」`, 'story');
+    e.entryClothes = {...player.clothes};
+    setEnemy(e);
+    actionRef.current = false;
   };
   // 拒絕賠償 → 送警局：當下商品即歸還，隨後強制關押 48 小時
   const doGotoJail = () => {
@@ -3589,6 +3632,17 @@ const TowerGame = () => {
       addLogs(sexUndressLogs);
       setPlayer(p => ({...p, clothes: sexNewClothes}));
     }
+    // 老闆(肉償)：一律無套，就算身上有套也直接無套
+    if (enemy.isBoss) {
+      const first = enemy.condomMode !== 'without';
+      const pool = first
+        ? (hole==='vagina' ? SCENE_TEXTS.roomNoCondomVagina : SCENE_TEXTS.roomNoCondomAnal)
+        : (hole==='vagina' ? SCENE_TEXTS.roomContinueNoCondomVagina : SCENE_TEXTS.roomContinueNoCondomAnal);
+      addLog(pick(pool).replace(/{E}/g, enemy.name), 'story');
+      setEnemy(e=>({...e, phase:'sex', pendingHole:hole, condomEquipped:false, condomMode:'without'}));
+      actionRef.current = false;
+      return;
+    }
     // 已決定無套（不再詢問，用延續文本）
     if (enemy.condomMode === 'without') {
       const pool = hole==='vagina' ? SCENE_TEXTS.roomContinueNoCondomVagina : SCENE_TEXTS.roomContinueNoCondomAnal;
@@ -3863,7 +3917,8 @@ const TowerGame = () => {
     addLog(pick(SCENE_TEXTS.roomSexDefeated).replace(/{E}/g, enemyName), 'bad');
     // 起床文本緊接死魚文本（中間不輸出任何柯妤潔主觀視角文本，她已昏倒）
     addLog(pick(SCENE_TEXTS.wakeDefeated), 'story');
-    if (isBathDefeat) setGs('explore'); // 場景切回房間
+    if (enemy?.isBoss) addLog('……再次睜開眼，柯妤潔已經回到了娼館，天已大亮。', 'hint');
+    if (isBathDefeat || enemy?.isBoss) setGs('explore'); // 浴室/休息區昏倒 → 場景切回娼館
     // 戰敗死魚文本一律是「無套內射小穴」，機制強制對齊 vagina（污漬記小穴、可懷孕），
     // 避免客人偏好肛交時出現「文字寫內射子宮、卻記成 anal 又不懷孕」的矛盾。
     const hole = 'vagina';
@@ -3954,7 +4009,9 @@ const TowerGame = () => {
     discount={shopDiscount} services={SHOP_DISCOUNT_SERVICES}
     onAskDiscount={doAskDiscount} bossOffer={bossOffer} onAcceptOffer={doAcceptDiscount} onDeclineOffer={doDeclineDiscount}
     discountLocked={player.discountAttemptDay===player.days}
-    onTalkBoss={()=>addLog(`老闆 ${SHOPKEEPER_NAME} 瞇眼笑了笑：「妹妹今天想找點什麼？」（互動開發中……）`,'hint')}
+    onTalkBoss={()=>addLog(player.bossSatedDay===player.days
+      ? `老闆 ${SHOPKEEPER_NAME} 一臉滿足地揮揮手：「我已經爽夠啦，妳這小妮子真夠賤的……下次再跟妳好好爽一場吧。」`
+      : `老闆 ${SHOPKEEPER_NAME} 瞇眼笑了笑：「妹妹今天想找點什麼？」（互動開發中……）`,'hint')}
     theftPhase={theftPhase} onLeave={doLeaveShop} onReturnAndLeave={doReturnAndLeave} onAttemptTheft={doAttemptTheft}
     onCancelLeave={()=>setTheftPhase(null)} onCompensate={doCompensate} onMeatComp={doMeatCompensate} onGotoJail={doGotoJail}
     theftFine={theftFine()} meatFailed={meatFailed} onBack={doLeaveShop} />;
@@ -4031,7 +4088,7 @@ const TowerGame = () => {
         ) : (
           <div className="grid grid-cols-2 gap-2">
             <button onClick={doSex} className={`w-full py-2.5 col-span-2 font-serif rounded-lg font-bold`} style={BR.roseStyle}>💥 繼續衝刺</button>
-            <button onClick={doSendOff} className={`col-span-2 font-serif rounded-lg font-bold py-2`} style={BR.ghostStyle}>🚪 送客</button>
+            {!enemy.isBoss && <button onClick={doSendOff} className={`col-span-2 font-serif rounded-lg font-bold py-2`} style={BR.ghostStyle}>🚪 送客</button>}
           </div>
         )}
       </div>
@@ -4099,17 +4156,30 @@ const TowerGame = () => {
             </button>
           </div>
         )}
-        <div className="grid grid-cols-2 gap-2">
-          <button onClick={doBathInvite} disabled={enemy?.bathLocked}
-            className={`${enemy?.bathLocked ? BB.dis : BB.primary} w-full`}
-            style={enemy?.bathLocked ? BB.disStyle : BB.primaryStyle}>
-            {enemy?.bathLocked?'🔒 沐浴邀請':'🛁 邀請沐浴'}
-          </button>
-          <button onClick={doSendOff} className={BR.ghost} style={BR.ghostStyle}>🚪 送客</button>
-        </div>
+        {!enemy.isBoss && (
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={doBathInvite} disabled={enemy?.bathLocked}
+              className={`${enemy?.bathLocked ? BB.dis : BB.primary} w-full`}
+              style={enemy?.bathLocked ? BB.disStyle : BB.primaryStyle}>
+              {enemy?.bathLocked?'🔒 沐浴邀請':'🛁 邀請沐浴'}
+            </button>
+            <button onClick={doSendOff} className={BR.ghost} style={BR.ghostStyle}>🚪 送客</button>
+          </div>
+        )}
       </div>
     );
   }
+
+  // 休息區：無老闆時的肉償起始畫面（接客鈕→肉償；無浴室/更衣室/休息/離開）
+  if (gs==='restArea' && !enemy) return (
+    <div className="space-y-3">
+      <div className="rounded-xl p-4 border border-pink-800/40 text-center" style={{background:'#1c0f16'}}>
+        <h3 className="text-pink-300 font-bold mb-1">🚪 休息區</h3>
+        <p className="text-pink-200/80 text-sm">老闆 {SHOPKEEPER_NAME} 鎖上了門，色瞇瞇地等著柯妤潔用身體賠罪。</p>
+      </div>
+      <button onClick={doMeatService} className={`w-full ${BR.primary}`} style={BR.primaryStyle}>💋 肉償（伺候老闆）</button>
+    </div>
+  );
 
   // 無客人時的探索介面
   return (
