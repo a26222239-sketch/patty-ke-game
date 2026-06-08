@@ -2573,16 +2573,16 @@ const TowerGame = () => {
     if (player.discountAttemptDay === player.days) { addLog('🚫 老闆今天已經不肯再冒險了，明天再來吧。','hint'); return; }
     actionRef.current = true;
     const traffic = getFootTrafficValue(player.timeMinutes) ?? 0;
-    addLog(`💋 柯妤潔趁櫃台沒客人，湊到老闆 ${SHOPKEEPER_NAME} 耳邊，小聲提議用【${svc.label}】換個折扣……`, 'hint');
+    addLog('💋 ' + pick(SCENE_TEXTS.shopAskDiscount).replace(/{BOSS}/g, SHOPKEEPER_NAME).replace(/{SVC}/g, svc.label), 'hint');
     if (Math.random() >= discountAcceptChance(svc, traffic)) {
-      addLog(`🧔 老闆 ${SHOPKEEPER_NAME} 緊張地往店裡瞄了一眼，把她推開：「現在這麼多人，別亂來！」（今天無法再索取折扣）`, 'bad');
+      addLog('🧔 ' + pick(SCENE_TEXTS.shopBossRefuse).replace(/{BOSS}/g, SHOPKEEPER_NAME), 'bad');
       setPlayer(p=>({...p, discountAttemptDay:p.days}));   // 拒絕也用掉今天機會
       actionRef.current = false;
       return;
     }
     const off = rollDiscount(svc, traffic);
     setBossOffer({ svc, off, traffic });
-    addLog(`🧔 老闆 ${SHOPKEEPER_NAME} 嚥了口口水，壓低聲音：「……就一次。我給妳打 ${formatZhe(off)} 折。」`, 'good');
+    addLog('🧔 ' + pick(SCENE_TEXTS.shopBossOffer).replace(/{BOSS}/g, SHOPKEEPER_NAME).replace(/{ZHE}/g, formatZhe(off)), 'good');
     actionRef.current = false;
   };
   // 索取折扣 step 2a：柯妤潔答應老闆開出的折扣 → 完成服務、套用折扣
@@ -2590,10 +2590,11 @@ const TowerGame = () => {
     if (actionRef.current || !bossOffer) return;
     actionRef.current = true;
     const { svc, off } = bossOffer;
-    // TODO: 之後接 shopForeplay 服務場景文本與時間/體力消耗
+    const scene = (SCENE_TEXTS.shopForeplay[svc.key]) || [];
     setShopDiscount(d => Math.max(d, off));
     setPlayer(p=>({...p, discountAttemptDay:p.days}));     // 服務完成用掉今天機會
-    addLog(`💋 柯妤潔點頭答應，趁四下無人迅速為老闆 ${SHOPKEEPER_NAME} 完成了【${svc.label}】，換得結帳打 ${formatZhe(off)} 折（省 ${Math.round(off*100)}%）。（服務場景開發中……）`, 'good');
+    addLog('💋 ' + pick(scene).replace(/{BOSS}/g, SHOPKEEPER_NAME).replace(/{ZHE}/g, formatZhe(off)), 'story');
+    addLog(`💳 結帳折扣已套用：打 ${formatZhe(off)} 折（省 ${Math.round(off*100)}%）。`, 'gold');
     setBossOffer(null);
     actionRef.current = false;
   };
@@ -2602,7 +2603,7 @@ const TowerGame = () => {
     if (actionRef.current || !bossOffer) return;
     actionRef.current = true;
     setPlayer(p=>({...p, discountAttemptDay:p.days}));     // 不接受也用掉今天機會
-    addLog(`🙅 柯妤潔覺得不划算，搖頭婉拒。老闆 ${SHOPKEEPER_NAME} 哼了一聲走開。（今天無法再索取折扣）`, 'hint');
+    addLog('🙅 ' + pick(SCENE_TEXTS.shopDeclineOffer).replace(/{BOSS}/g, SHOPKEEPER_NAME), 'hint');
     setBossOffer(null);
     actionRef.current = false;
   };
