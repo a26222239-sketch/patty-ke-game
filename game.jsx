@@ -3649,11 +3649,15 @@ const TowerGame = () => {
     return (
       <div className="space-y-2">
         <div className="text-center text-sm py-1" style={{color:'#c0a070'}}>🏙 你走在街道上……</div>
-        <div className="grid grid-cols-2 gap-2">
-          <button onClick={doOpenShop} className={`${shopOpen ? BR.primary : BR.dis} w-full`} style={shopOpen ? BR.primaryStyle : BR.disStyle}>{shopOpen?'🏪 商店':'🔒 商店已關'}</button>
+        <div className="text-xs font-bold pl-1" style={{color:'#8a6840'}}>地　點</div>
+        <div className="grid grid-cols-3 gap-2">
+          <button onClick={doOpenShop} className={`${shopOpen ? BR.primary : BR.dis} w-full text-sm`} style={shopOpen ? BR.primaryStyle : BR.disStyle}>{shopOpen?'🏪 商店':'🔒 打烊'}</button>
           <button onClick={()=>{setPlayer(p=>({...addMinutes(p,10), hp:Math.max(0,p.hp-3)}));setGs('piercingShop');}}
-            className={BR.ghost} style={{...BR.ghostStyle, color:'#c090e0', borderColor:'#6030a0', borderBottomColor:'#8040c0'}}>🎨 刺青店</button>
+            className={`w-full text-sm ${BR.ghost}`} style={{...BR.ghostStyle, color:'#c090e0', borderColor:'#6030a0', borderBottomColor:'#8040c0'}}>🎨 刺青店</button>
+          <button onClick={()=>addLog('🚽 公廁（野戰地點）開發中……','hint')}
+            className={`w-full text-sm ${BR.ghost}`} style={{...BR.ghostStyle, color:'#a0a8b0', borderColor:'#3a4048', borderBottomColor:'#505860'}}>🚽 公廁</button>
         </div>
+        <div className="text-xs font-bold pl-1 pt-1" style={{color:'#8a6840'}}>行　動</div>
         <button onClick={()=>addLog('🚧 野戰系統開發中，敬請期待……','hint')}
           className={`w-full ${BR.ghost}`} style={{...BR.ghostStyle, color:'#90c878', borderColor:'#3a6020', borderBottomColor:'#508030'}}>🧍 尋找路人</button>
         <button onClick={()=>{setPlayer(p=>addMinutes(p,5));setGs('explore');}} className={`w-full ${BR.ghost}`} style={BR.ghostStyle}>🏠 回家</button>
@@ -3800,15 +3804,16 @@ const TowerGame = () => {
           </div>
         </div>
       )}
-      <div className="grid grid-cols-2 gap-2">
-        <button onClick={()=>{setPlayer(p=>addMinutes(p,5));setGs('street');}} className={BR.primary} style={BR.primaryStyle}>🚶 外出</button>
-        <button onClick={()=>setGs('wardrobe')} className={BR.ghost} style={BR.ghostStyle}>👗 衣物</button>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="text-xs font-bold pl-1 pt-1" style={{color:'#8a6840'}}>地　點</div>
+      <div className="grid grid-cols-3 gap-2">
         <button onClick={()=>{setPlayer(p=>({...addMinutes(p,5), bathSavedClothes:{...p.clothes}}));setGs('bathroom');}}
-          className={`w-full ${BB.primary}`} style={BB.primaryStyle}>🛁 浴室</button>
-        <button onClick={()=>setGs('saveLoad')} className={BR.ghost} style={BR.ghostStyle}>💾 存讀檔</button>
+          className={`w-full text-sm ${BR.ghost}`} style={{...BR.ghostStyle, color:'#6cc0d8', borderColor:'#2a5e70', borderBottomColor:'#3a8098'}}>🛁 浴室</button>
+        <button onClick={()=>setGs('wardrobe')} className={`w-full text-sm ${BR.ghost}`} style={BR.ghostStyle}>👗 更衣室</button>
+        <button onClick={()=>{setPlayer(p=>addMinutes(p,5));setGs('street');}}
+          className={`w-full text-sm ${BR.ghost}`} style={{...BR.ghostStyle, color:'#e0b060', borderColor:'#7a5020', borderBottomColor:'#a07030'}}>🚶 外出</button>
       </div>
+      <div className="text-xs font-bold pl-1 pt-1" style={{color:'#8a6840'}}>系　統</div>
+      <button onClick={()=>setGs('saveLoad')} className={`w-full ${BR.ghost}`} style={BR.ghostStyle}>💾 存讀檔</button>
     </div>
   );
 };
