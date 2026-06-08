@@ -194,23 +194,30 @@
 //        SaveLoadPanel
 //
 // 【SCENE_TEXTS 內 key 命名公約】
-//   結構：場景前綴 + 動作 + 變體（全 camelCase）
-//   場景前綴（首字小寫）：
-//     room*    房間場景（取代過去的「裸名」/ 無前綴形式）
-//     bath*    浴室場景
-//     wake*    起床場景（與場景無關，獨立分類）
-//     entry*   入場文本
-//   動作關鍵字（中段，首字大寫接續駝峰）：
+//   結構：地點前綴 + 動作 + 變體（全 camelCase）。★核心分類「以地點為準」，可隨新地點擴充。
+//   地點前綴（首字小寫，依「玩家所在地點」命名）：
+//     room*     房間場景
+//     bath*     浴室場景
+//     shop*     商店場景（含老闆索取折扣的服務）
+//     toilet*   公廁場景（野戰）
+//     ※「野戰」只是概念，分類一律「靠地點」：用該地點當前綴（toilet*、alley* 巷弄…），
+//       不可用 field*／street* 之類的「概念前綴」。新地點同理：以該地點為前綴。
+//   非地點的獨立分類（例外，沿用既有）：
+//     wake*     起床（與地點無關）
+//     entry*    入場
+//   動作關鍵字（中段，首字大寫；★全地點共用同一套，不可為新地點另創同義詞）：
 //     Chat / Seduce / Foreplay / Sex / Dismiss / Leave / Finish / Cleanup
+//     ※手交/口交/露胸等「前戲性質」的服務一律用 Foreplay。
+//       故商店老闆的折扣服務 = shopForeplay（巢狀 hand/mouth/…），與 roomForeplay/bathForeplay 同構。
 //   變體（後段，首字大寫接續駝峰）：
 //     Front / Back / Vagina / Anal / Condom / NoCondom / Arousal /
 //     Orgasm / Normal / NoTop / NoBottom / Naked / Timeout /
 //     Endurance / Semen / Defeated
 //   範例：
 //     roomSexFront          房間做愛-前位
-//     roomSexFrontArousal   房間做愛-前位-性奮度
 //     bathLeaveTimeout      浴室退場-時間到
-//     roomDismissPlayer     房間送客-柯妤潔台詞
+//     shopForeplay          商店-前戲服務（巢狀 hand/mouth/…）
+//     toiletSexBack         公廁-做愛-後位（野戰，靠地點分類）
 //     wakeExhausted         起床-精疲力盡
 //     entryNoTop            入場-無上著
 //
