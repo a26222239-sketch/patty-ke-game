@@ -796,6 +796,7 @@ const INITIAL_PLAYER = {
   shopCondomsDay: 1,    // 上次重置庫存的天數
   shopSessionOpen: false, // 商店連續開啟標記（進商店時 true，離開時 false）
   shopProgress: {top:0,bra:0,bottom:0,panties:0,ear:0,navel:0,areola:0,labia:0,socks:0,shoes:0},
+  discountAttemptDay: 0,  // 上次索取折扣的天數（== 當前 days 表示今天已用過機會；0=從未）
   bathSavedClothes: null,
   // 體毛系統：三部位等級 0-3（光滑/稀疏/濃密/雜草叢生），起始全為稀疏(1)
   // 每 5 天 +1 級（在 doRest 內推進），最高到 3（雜草叢生）
@@ -1734,22 +1735,44 @@ const BathroomPanel = ({ player, enemy, onDoBath, onDoBathService, onDoForeplay,
 
 // 商店人流（依營業 9:00–21:00 的鐘形曲線：開店少→午後尖峰→近打烊又少）；UI 只顯示形容詞、不顯示數字
 const FOOT_TRAFFIC_LABELS = ['門可羅雀','三三兩兩','人來人往','摩肩接踵','水泄不通'];
-const getFootTraffic = (timeMinutes) => {
+// 人流原始值 0~100（打烊回 null）；折扣機率公式要用到數字，故拆成獨立函數
+const getFootTrafficValue = (timeMinutes) => {
   const mins = ((timeMinutes % 1440) + 1440) % 1440;
   if (mins < 540 || mins >= 1260) return null;            // 打烊
   const t = (mins - 540) / 720;                           // 0(9:00)→1(21:00)
-  const v = Math.round(100 * (1 - Math.pow(2*t - 1, 2))); // 鐘形，15:00 尖峰 100
+  return Math.round(100 * (1 - Math.pow(2*t - 1, 2)));    // 鐘形，15:00 尖峰 100
+};
+const getFootTraffic = (timeMinutes) => {
+  const v = getFootTrafficValue(timeMinutes);
+  if (v === null) return null;
   return FOOT_TRAFFIC_LABELS[v<=20?0 : v<=40?1 : v<=60?2 : v<=80?3 : 4];
 };
 const SHOPKEEPER_NAME = '阿坤';
-// 索取折扣：為老闆服務換結帳折扣。框架用佔位值；折扣%/服務場景文本/時間體力消耗 之後再設定
+// ── 索取折扣（為老闆服務換結帳折扣）──────────────────────────────────────
+// 每天只有一次機會：柯妤潔提議 → 老闆判定接受/拒絕 → 接受則開出折扣 → 柯妤潔決定接不接受。
+// 任一終點（老闆拒絕／柯妤潔不接受／服務完成）都用掉當日機會，隔天開店才能再要求。
+//   acceptPenalty：服務越明顯，老闆越怕被店裡客人看到，接受率額外扣的基數（露胸最隱密、口交最明顯）。
+//   discountRange：成功完成可得的折扣區間(off 比例)；人流越高越刺激→折扣越靠區間上限。
 const SHOP_DISCOUNT_SERVICES = [
-  { key:'flash', label:'露出胸部', discount:0.05 },
-  { key:'hand',  label:'手交',     discount:0.15 },
-  { key:'oral',  label:'口交',     discount:0.30 },
+  { key:'flash', label:'露出胸部', risk:'較隱密',   acceptPenalty:0.00, discountRange:[0.05, 0.15] },
+  { key:'hand',  label:'手交',     risk:'有點明顯', acceptPenalty:0.15, discountRange:[0.15, 0.35] },
+  { key:'oral',  label:'口交',     risk:'非常明顯', acceptPenalty:0.30, discountRange:[0.30, 0.60] },
 ];
+// 老闆接受率：人流越多越怕被看到；服務越明顯再扣基數。夾在 0~1
+const discountAcceptChance = (svc, traffic) =>
+  Math.max(0, Math.min(1, (100 - (traffic ?? 0)) / 100 - svc.acceptPenalty));
+// 老闆開出的折扣(off 比例)：人流越高越刺激→越靠區間上限，加小幅隨機，量化到 5% 一檔、夾回區間
+const rollDiscount = (svc, traffic) => {
+  const [lo, hi] = svc.discountRange;
+  const t = Math.max(0, Math.min(1, (traffic ?? 0) / 100));
+  const center = lo + (hi - lo) * t;
+  const v = center + (Math.random()*2 - 1) * (hi - lo) * 0.20;
+  return Math.max(lo, Math.min(hi, Math.round(v*20)/20));
+};
+// off 比例 → 中文「折」字串（off 0.35 → "6.5"，off 0.10 → "9"）
+const formatZhe = (off) => String(Math.round((1-off)*100)/10);
 
-const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, onBack, area, setArea, footTraffic, onTalkBoss, discount=0, services=[], onBossService}) => {
+const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, onBack, area, setArea, footTraffic, onTalkBoss, discount=0, services=[], onAskDiscount, bossOffer, onAcceptOffer, onDeclineOffer, discountLocked}) => {
   const [bossMenu, setBossMenu] = React.useState(false);
   const gold = <span className="text-yellow-300 text-lg font-bold">💰 {player.gold}G</span>;
   const cartTotal = cart.reduce((s,i)=>s+i.price, 0);
@@ -1786,14 +1809,28 @@ const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, o
       </button>
       {bossMenu && cart.length>0 && (
         <div className="rounded-lg p-3 border border-pink-900/50 space-y-2" style={{background:'#1c0f16'}}>
-          <p className="text-pink-300 text-xs font-bold">💋 索取折扣（為老闆服務換折扣）</p>
-          {services.map(svc=>(
-            <button key={svc.key} onClick={()=>{ onBossService(svc); setBossMenu(false); }}
-              className="w-full flex justify-between items-center px-3 py-2 rounded-lg bg-pink-900/30 hover:bg-pink-800/40 text-pink-100 text-sm font-bold">
-              <span>{svc.label}</span><span className="text-pink-300 text-xs">折 {Math.round(svc.discount*100)}%</span>
-            </button>
-          ))}
-          <p className="text-slate-600 text-[10px]">（服務場景／消耗／折扣數值之後設定）</p>
+          <p className="text-pink-300 text-xs font-bold">💋 索取折扣（趁櫃台沒客人，為老闆服務換折扣）</p>
+          {discountLocked ? (
+            <p className="text-slate-500 text-xs">老闆 {SHOPKEEPER_NAME} 今天被嚇到了，不肯再冒險。明天開店後再來吧。</p>
+          ) : bossOffer ? (
+            <div className="space-y-2">
+              <p className="text-pink-100 text-sm leading-relaxed">老闆願意接受【{bossOffer.svc.label}】，給妳打 <span className="text-yellow-300 font-bold">{formatZhe(bossOffer.off)}</span> 折（省 {Math.round(bossOffer.off*100)}%）。要答應嗎？</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={onAcceptOffer} className="py-2 rounded-lg bg-pink-700 hover:bg-pink-600 text-white text-sm font-bold">答應並服務</button>
+                <button onClick={onDeclineOffer} className="py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-bold">不划算，拒絕</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {services.map(svc=>(
+                <button key={svc.key} onClick={()=>onAskDiscount(svc)}
+                  className="w-full flex justify-between items-center px-3 py-2 rounded-lg bg-pink-900/30 hover:bg-pink-800/40 text-pink-100 text-sm font-bold">
+                  <span>{svc.label}</span><span className="text-pink-400 text-[10px]">{svc.risk}</span>
+                </button>
+              ))}
+              <p className="text-slate-600 text-[10px]">人越少老闆越敢答應；但人越多、服務越大膽，折扣越高。機會每天只有一次。</p>
+            </>
+          )}
         </div>
       )}
       <div className="bg-slate-800/60 rounded-lg p-3 border border-amber-900/40">
@@ -2110,6 +2147,7 @@ const TowerGame = () => {
   const [shopArea, setShopArea] = useState('lobby');  // 商店內裝子區：lobby(門口)/counter(櫃台)/clothing(服飾區)
   const [cart, setCart] = useState([]);  // 購物籃：服飾區「拿起」的物品，到櫃台結帳才扣款
   const [shopDiscount, setShopDiscount] = useState(0);  // 跟老闆服務換來的結帳折扣(0~1)
+  const [bossOffer, setBossOffer] = useState(null);     // 老闆已接受、待柯妤潔決定的折扣 {svc, off, traffic}
   const [shop,    setShop]    = useState([]);
   const [tattooDraft, setTattooDraft] = useState({loc:'',size:'',content:''});
   const [showRestMenu, setShowRestMenu] = useState(false);
@@ -2519,6 +2557,7 @@ const TowerGame = () => {
     setShopArea('lobby');
     setCart([]);
     setShopDiscount(0);
+    setBossOffer(null);
     setGs('shop');
     actionRef.current = false;
 
@@ -2527,14 +2566,44 @@ const TowerGame = () => {
   const toggleCart = (item) => {
     setCart(c => c.find(x=>x.id===item.id) ? c.filter(x=>x.id!==item.id) : [...c, item]);
   };
-  // 索取折扣：為老闆做服務換結帳折扣（框架；服務場景/時間體力/折扣規則之後設定）
-  const doBossService = (svc) => {
-    if (actionRef.current) return;
+  // 索取折扣 step 1：柯妤潔提議服務，老闆判定接受/拒絕（每天一次機會）
+  const doAskDiscount = (svc) => {
+    if (actionRef.current || bossOffer) return;
     if (cart.length === 0) { addLog('🛒 購物籃是空的，先拿點東西吧。','hint'); return; }
+    if (player.discountAttemptDay === player.days) { addLog('🚫 老闆今天已經不肯再冒險了，明天再來吧。','hint'); return; }
     actionRef.current = true;
-    // TODO: 之後接服務場景文本、時間/體力消耗、折扣規則（目前取較高者）
-    setShopDiscount(d => Math.min(0.9, Math.max(d, svc.discount)));
-    addLog(`💋 柯妤潔為老闆 ${SHOPKEEPER_NAME} 提供了【${svc.label}】，換得結帳 ${Math.round(svc.discount*100)}% 折扣。（服務細節開發中……）`, 'good');
+    const traffic = getFootTrafficValue(player.timeMinutes) ?? 0;
+    addLog(`💋 柯妤潔趁櫃台沒客人，湊到老闆 ${SHOPKEEPER_NAME} 耳邊，小聲提議用【${svc.label}】換個折扣……`, 'hint');
+    if (Math.random() >= discountAcceptChance(svc, traffic)) {
+      addLog(`🧔 老闆 ${SHOPKEEPER_NAME} 緊張地往店裡瞄了一眼，把她推開：「現在這麼多人，別亂來！」（今天無法再索取折扣）`, 'bad');
+      setPlayer(p=>({...p, discountAttemptDay:p.days}));   // 拒絕也用掉今天機會
+      actionRef.current = false;
+      return;
+    }
+    const off = rollDiscount(svc, traffic);
+    setBossOffer({ svc, off, traffic });
+    addLog(`🧔 老闆 ${SHOPKEEPER_NAME} 嚥了口口水，壓低聲音：「……就一次。我給妳打 ${formatZhe(off)} 折。」`, 'good');
+    actionRef.current = false;
+  };
+  // 索取折扣 step 2a：柯妤潔答應老闆開出的折扣 → 完成服務、套用折扣
+  const doAcceptDiscount = () => {
+    if (actionRef.current || !bossOffer) return;
+    actionRef.current = true;
+    const { svc, off } = bossOffer;
+    // TODO: 之後接 shopForeplay 服務場景文本與時間/體力消耗
+    setShopDiscount(d => Math.max(d, off));
+    setPlayer(p=>({...p, discountAttemptDay:p.days}));     // 服務完成用掉今天機會
+    addLog(`💋 柯妤潔點頭答應，趁四下無人迅速為老闆 ${SHOPKEEPER_NAME} 完成了【${svc.label}】，換得結帳打 ${formatZhe(off)} 折（省 ${Math.round(off*100)}%）。（服務場景開發中……）`, 'good');
+    setBossOffer(null);
+    actionRef.current = false;
+  };
+  // 索取折扣 step 2b：柯妤潔嫌不划算，拒絕老闆開出的折扣
+  const doDeclineDiscount = () => {
+    if (actionRef.current || !bossOffer) return;
+    actionRef.current = true;
+    setPlayer(p=>({...p, discountAttemptDay:p.days}));     // 不接受也用掉今天機會
+    addLog(`🙅 柯妤潔覺得不划算，搖頭婉拒。老闆 ${SHOPKEEPER_NAME} 哼了一聲走開。（今天無法再索取折扣）`, 'hint');
+    setBossOffer(null);
     actionRef.current = false;
   };
   // 櫃台結帳：一次付清購物籃，套用老闆折扣，扣款並入手
@@ -3743,9 +3812,11 @@ const TowerGame = () => {
   if (gs==='status') return <StatusPanel player={player} onBack={()=>setGs('explore')} />;
   if (gs==='shop') return <ShopPanel player={player} shop={shop} cart={cart} onToggleCart={toggleCart} onCheckout={doCheckout} onBuyCondom={doBuyCondom}
     area={shopArea} setArea={setShopArea} footTraffic={getFootTraffic(player.timeMinutes)}
-    discount={shopDiscount} services={SHOP_DISCOUNT_SERVICES} onBossService={doBossService}
+    discount={shopDiscount} services={SHOP_DISCOUNT_SERVICES}
+    onAskDiscount={doAskDiscount} bossOffer={bossOffer} onAcceptOffer={doAcceptDiscount} onDeclineOffer={doDeclineDiscount}
+    discountLocked={player.discountAttemptDay===player.days}
     onTalkBoss={()=>addLog(`老闆 ${SHOPKEEPER_NAME} 瞇眼笑了笑：「妹妹今天想找點什麼？」（互動開發中……）`,'hint')}
-    onBack={()=>{setCart([]);setShopDiscount(0);setPlayer(p=>({...p,shopSessionOpen:false}));setGs('street');}} />;
+    onBack={()=>{setCart([]);setShopDiscount(0);setBossOffer(null);setPlayer(p=>({...p,shopSessionOpen:false}));setGs('street');}} />;
   if (gs==='birth') return (
     <div className="space-y-3">
       <div className="bg-pink-900/30 rounded-xl p-4 border border-pink-700/40 text-center">
