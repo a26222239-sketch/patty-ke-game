@@ -2591,10 +2591,13 @@ const TowerGame = () => {
     if (actionRef.current || !bossOffer) return;
     actionRef.current = true;
     const { svc, off } = bossOffer;
-    // 比照娼院前戲：oral(mouth型)用完整 swallow 池；flash/hand 走 spill 主文本 + 一律追加 swallowExtra（此處默認吞精）
-    const pool = SCENE_TEXTS.shopForeplay[svc.key] || {};
-    let tpl = pool.swallow ? pick(pool.swallow) : pick(pool.spill);
-    if (!pool.swallow && pool.swallowExtra && pool.swallowExtra.length) tpl += pick(pool.swallowExtra);
+    // 露胸(flash)：扁平陣列、對方不射精、純揉胸劇情。
+    // 手交(hand)：spill 主文本 + 一律追加 swallowExtra（默認吞精）。口交(oral)：完整 swallow 池。
+    const pool = SCENE_TEXTS.shopForeplay[svc.key] || [];
+    let tpl;
+    if (Array.isArray(pool)) tpl = pick(pool);
+    else if (pool.swallow) tpl = pick(pool.swallow);
+    else { tpl = pick(pool.spill); if (pool.swallowExtra && pool.swallowExtra.length) tpl += pick(pool.swallowExtra); }
     setShopDiscount(d => Math.max(d, off));
     setPlayer(p=>addMinutes({...p, discountAttemptDay:p.days}, svc.time||15));  // 服務完成用掉今天機會、耗時比照娼院前戲
     addLog('💋 ' + tpl.replace(/{BOSS}/g, SHOPKEEPER_NAME), 'story');
