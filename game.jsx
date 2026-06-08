@@ -1773,11 +1773,38 @@ const rollDiscount = (svc, traffic) => {
 // off 比例 → 中文「折」字串（off 0.35 → "6.5"，off 0.10 → "9"）
 const formatZhe = (off) => String(Math.round((1-off)*100)/10);
 
-const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, onBack, area, setArea, footTraffic, onTalkBoss, discount=0, services=[], onAskDiscount, bossOffer, onAcceptOffer, onDeclineOffer, discountLocked}) => {
+const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, onBack, area, setArea, footTraffic, onTalkBoss, discount=0, services=[], onAskDiscount, bossOffer, onAcceptOffer, onDeclineOffer, discountLocked, theftPhase, onLeave, onReturnAndLeave, onAttemptTheft, onCancelLeave, onCompensate, onMeatComp, onGotoJail, theftFine=0}) => {
   const [bossMenu, setBossMenu] = React.useState(false);
   const gold = <span className="text-yellow-300 text-lg font-bold">💰 {player.gold}G</span>;
   const cartTotal = cart.reduce((s,i)=>s+i.price, 0);
   const payTotal = Math.round(cartTotal * (1 - discount));
+  // 竊盜流程覆蓋層（優先於各區域）
+  if (theftPhase === 'warn') return (
+    <div className="space-y-3">
+      <div className="flex justify-between items-center"><h3 className="text-red-300 font-bold">⚠️ 未結帳商品</h3>{gold}</div>
+      <div className="bg-red-950/40 rounded-lg p-3 border border-red-800/50 text-sm text-red-200 leading-relaxed">
+        購物籃裡還有 <b className="text-red-100">{cart.length}</b> 件商品（共 {cartTotal}G）尚未結帳。<br/>
+        直接帶走將被視為<b className="text-red-100">竊盜</b>——店裡人越多越不容易被發現，但風險自負。
+      </div>
+      <button onClick={onReturnAndLeave} className="w-full py-3 bg-slate-700 hover:bg-slate-600 text-slate-100 rounded-lg font-bold">🛒 放回商品，正常離開</button>
+      <button onClick={onAttemptTheft} className="w-full py-3 bg-red-800 hover:bg-red-700 text-white rounded-lg font-bold">🥷 鋌而走險，把東西偷走</button>
+      <button onClick={onCancelLeave} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg font-bold">↩ 取消，繼續逛</button>
+    </div>
+  );
+  if (theftPhase === 'caught') return (
+    <div className="space-y-3">
+      <div className="flex justify-between items-center"><h3 className="text-red-300 font-bold">🚨 被當場逮住</h3>{gold}</div>
+      <div className="bg-red-950/40 rounded-lg p-3 border border-red-800/50 text-sm text-red-200 leading-relaxed">
+        老闆 {SHOPKEEPER_NAME} 追了出來、揪住了柯妤潔。你得給個交代：
+      </div>
+      <button onClick={onCompensate} disabled={player.gold<theftFine}
+        className={`w-full py-3 rounded-lg font-bold ${player.gold<theftFine?'bg-slate-800 text-slate-600':'bg-yellow-700 hover:bg-yellow-600 text-white'}`}>
+        💸 賠償 {theftFine}G（商品價的 50%）{player.gold<theftFine?'（金幣不足）':''}
+      </button>
+      <button onClick={onMeatComp} className="w-full py-3 bg-pink-800 hover:bg-pink-700 text-white rounded-lg font-bold">🍖 肉償（以身體抵償）</button>
+      <button onClick={onGotoJail} className="w-full py-3 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg font-bold">🚓 拒絕 → 被送警局關押 48 小時</button>
+    </div>
+  );
   const BackToLobby = () => (
     <button onClick={()=>setArea('lobby')} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg font-bold">↩ 返回門口</button>
   );
@@ -1895,7 +1922,7 @@ const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, o
         <button onClick={()=>setArea('jewelry')} className="py-3 bg-slate-800 hover:bg-slate-700 text-pink-200 rounded-lg font-bold">💍 飾品區</button>
       </div>
       <button onClick={()=>setArea('counter')} className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-amber-200 rounded-lg font-bold">🧾 櫃台{cart.length>0?`（🛒${cart.length}）`:''}</button>
-      <button onClick={onBack} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg font-bold">🚪 離開（回街道）</button>
+      <button onClick={onLeave} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg font-bold">🚪 離開（回街道）{cart.length>0?`（🛒${cart.length} 未結帳）`:''}</button>
     </div>
   );
 };
@@ -2149,6 +2176,7 @@ const TowerGame = () => {
   const [cart, setCart] = useState([]);  // 購物籃：服飾區「拿起」的物品，到櫃台結帳才扣款
   const [shopDiscount, setShopDiscount] = useState(0);  // 跟老闆服務換來的結帳折扣(0~1)
   const [bossOffer, setBossOffer] = useState(null);     // 老闆已接受、待柯妤潔決定的折扣 {svc, off, traffic}
+  const [theftPhase, setTheftPhase] = useState(null);   // 竊盜流程：null / 'warn'(離開警告) / 'caught'(被逮·賠償選擇)
   const [shop,    setShop]    = useState([]);
   const [tattooDraft, setTattooDraft] = useState({loc:'',size:'',content:''});
   const [showRestMenu, setShowRestMenu] = useState(false);
@@ -2559,6 +2587,7 @@ const TowerGame = () => {
     setCart([]);
     setShopDiscount(0);
     setBossOffer(null);
+    setTheftPhase(null);
     setGs('shop');
     actionRef.current = false;
 
@@ -2613,6 +2642,80 @@ const TowerGame = () => {
     addLog('🙅 ' + pick(SCENE_TEXTS.shopDeclineOffer).replace(/{BOSS}/g, SHOPKEEPER_NAME), 'hint');
     setBossOffer(null);
     actionRef.current = false;
+  };
+  // ── 離開商店 / 竊盜 ───────────────────────────────────────────────
+  // 統一離店：清空購物籃/折扣/竊盜狀態，回街道
+  const leaveShop = () => {
+    setCart([]); setShopDiscount(0); setBossOffer(null); setTheftPhase(null);
+    setPlayer(p=>({...p, shopSessionOpen:false}));
+    setGs('street');
+  };
+  // 點離開：購物籃空→直接離店；有東西→跳竊盜警告（防誤點）
+  const doLeaveShop = () => {
+    if (cart.length > 0) { setTheftPhase('warn'); return; }
+    leaveShop();
+  };
+  const doReturnAndLeave = () => {
+    addLog('🛒 柯妤潔把購物籃裡的東西一一放回架上，空手離開了商店。', 'hint');
+    leaveShop();
+  };
+  // 竊盜判定：成功率 = 人流/100 × 0.5（人越多越不易被發現，上限 50%、不可當賺錢手段）
+  const doAttemptTheft = () => {
+    if (actionRef.current || cart.length === 0) return;
+    actionRef.current = true;
+    const traffic = getFootTrafficValue(player.timeMinutes) ?? 0;
+    const chance = Math.min(0.5, traffic/100 * 0.5);
+    if (Math.random() < chance) {
+      const ids = cart.map(i=>i.id);
+      const names = cart.map(i=>i.name).join('、');
+      setPlayer(p=>{
+        const newProg = {...(p.shopProgress||{})};
+        cart.forEach(i=>{ newProg[i.slot] = (newProg[i.slot]||0)+1; });
+        const newWardrobe = [...p.wardrobe, ...ids];
+        setTimeout(()=>setShop(makeShop(newWardrobe, newProg)),0);
+        return {...p, wardrobe:newWardrobe, shopProgress:newProg};
+      });
+      addLog('🥷 ' + pick(SCENE_TEXTS.shopTheftSuccess).replace(/{BOSS}/g, SHOPKEEPER_NAME), 'good');
+      addLog(`🛍 柯妤潔無償得到了：${names}`, 'gold');
+      actionRef.current = false;
+      leaveShop();
+    } else {
+      addLog('🚨 ' + pick(SCENE_TEXTS.shopTheftCaught).replace(/{BOSS}/g, SHOPKEEPER_NAME), 'bad');
+      setTheftPhase('caught');
+      actionRef.current = false;
+    }
+  };
+  // 被逮後賠償：付購物籃總價 50%，商品歸還貨架、脫身
+  const theftFine = () => Math.ceil(cart.reduce((s,i)=>s+i.price,0) * 0.5);
+  const doCompensate = () => {
+    if (actionRef.current) return;
+    const fine = theftFine();
+    if (player.gold < fine) { addLog(`💰 金幣不足以賠償（需 ${fine}G）。`, 'bad'); return; }
+    actionRef.current = true;
+    setPlayer(p=>({...p, gold:p.gold-fine}));
+    addLog('💸 ' + pick(SCENE_TEXTS.shopTheftCompensate).replace(/{BOSS}/g, SHOPKEEPER_NAME).replace(/{FINE}/g, String(fine)), 'gold');
+    addLog(`🛒 購物籃的商品被收回貨架，柯妤潔賠了 ${fine}G 後脫身。`, 'hint');
+    actionRef.current = false;
+    leaveShop();
+  };
+  // 肉償（細節之後設計）：暫以佔位處理，商品歸還、脫身
+  const doMeatCompensate = () => {
+    if (actionRef.current) return;
+    actionRef.current = true;
+    addLog(`🍖 柯妤潔提出用身體向老闆 ${SHOPKEEPER_NAME} 抵償……（肉償細節開發中……）老闆悻悻收手，放她離開。`, 'story');
+    addLog('🛒 購物籃的商品被收回貨架。', 'hint');
+    actionRef.current = false;
+    leaveShop();
+  };
+  // 拒絕賠償 → 送警局強制關押 48 小時，商品歸還
+  const doGotoJail = () => {
+    if (actionRef.current) return;
+    actionRef.current = true;
+    addLog('🚓 ' + pick(SCENE_TEXTS.shopTheftJail).replace(/{BOSS}/g, SHOPKEEPER_NAME), 'bad');
+    addLog('🔒 柯妤潔被扭送警局，強制關押 48 小時。購物籃的商品全數歸還商店。', 'bad');
+    setPlayer(p=>addMinutes({...p}, 48*60));   // 推進 48 小時
+    actionRef.current = false;
+    leaveShop();
   };
   // 櫃台結帳：一次付清購物籃，套用老闆折扣，扣款並入手
   const doCheckout = () => {
@@ -3824,7 +3927,9 @@ const TowerGame = () => {
     onAskDiscount={doAskDiscount} bossOffer={bossOffer} onAcceptOffer={doAcceptDiscount} onDeclineOffer={doDeclineDiscount}
     discountLocked={player.discountAttemptDay===player.days}
     onTalkBoss={()=>addLog(`老闆 ${SHOPKEEPER_NAME} 瞇眼笑了笑：「妹妹今天想找點什麼？」（互動開發中……）`,'hint')}
-    onBack={()=>{setCart([]);setShopDiscount(0);setBossOffer(null);setPlayer(p=>({...p,shopSessionOpen:false}));setGs('street');}} />;
+    theftPhase={theftPhase} onLeave={doLeaveShop} onReturnAndLeave={doReturnAndLeave} onAttemptTheft={doAttemptTheft}
+    onCancelLeave={()=>setTheftPhase(null)} onCompensate={doCompensate} onMeatComp={doMeatCompensate} onGotoJail={doGotoJail}
+    theftFine={theftFine()} onBack={doLeaveShop} />;
   if (gs==='birth') return (
     <div className="space-y-3">
       <div className="bg-pink-900/30 rounded-xl p-4 border border-pink-700/40 text-center">
