@@ -767,7 +767,7 @@ const TATTOO_LOCS  = { face:'臉', neck:'頸部', breast:'乳房', abdomen:'腹�
 const INITIAL_PLAYER = {
   name:'柯妤潔', height:170, weight:55, bust:108, cup:'K', waist:72, hips:102,
   days:1, level:1, baseHp:100, hp:100, baseCharm:10,
-  exp:0, expToNext:20, condoms:0, gold:50,
+  exp:0, expToNext:20, condoms:0, gold:300,
   clothes:INIT_CLOTHES, wardrobe:INIT_WARDROBE,
   piercings:{ ear:false, navel:false, areola:false, labia:false },
   tattoos:{ face:null, neck:null, breast:null, abdomen:null, back:null, arm:null, buttocks:null, thigh:null },
@@ -1280,10 +1280,11 @@ const makeShop = (wardrobe=[], shopProgress={}) => {
   const slots = ['top','bra','bottom','panties','ear','navel','areola','labia','socks','shoes'];
   return slots.map(slot=>{
     const db = CLOTHING_DB[slot]||[];
-    const prog = shopProgress[slot]||0;
-    if (prog >= db.length) return {slot, sold:true};
-    const item = db[prog];
-    return wardrobe.includes(item.id) ? {slot, sold:true} : {...item, slot};
+    let idx = shopProgress[slot]||0;
+    // 跳過已擁有的（含初始就擁有的起始衣物），顯示該格第一件還沒有的
+    while (idx < db.length && wardrobe.includes(db[idx].id)) idx++;
+    if (idx >= db.length) return {slot, sold:true};
+    return {...db[idx], slot};
   });
 };
 
