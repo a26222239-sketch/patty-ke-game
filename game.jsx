@@ -417,8 +417,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Heart, ArrowUp, Beaker, ChevronRight, Bed, Baby, HeartHandshake,
          Store, Coins, Shirt, ShieldCheck, User, Scissors, PenTool, Flame } from 'lucide-react';
 import { SCENE_TEXTS, HAIR_PREF_HIT_TEXTS, PREGNANT_WAKE_TEXTS, BODYHAIR_GROW_TEXTS, STAIN_TEXTS, BATH_WASH_TEXTS, BOSS_TEXTS } from './texts.js';
-// 肉償休息區：老闆(isBoss)優先用 BOSS_TEXTS 對應池，未填的鍵自動回退娼館文本
-const bossPool = (enemy, key) => (enemy?.isBoss && BOSS_TEXTS[key]) || SCENE_TEXTS[key];
+// 肉償休息區老闆文本：娼館池鍵 → BOSS_TEXTS 對應鍵（BOSS_TEXTS 用獨立鍵名，
+// 不與娼館 room* 重名，避免搜尋/改文本時混淆）。未列入或未填者自動回退娼館文本。
+const BOSS_KEY = {
+  roomChat:'chat', roomChatOrgasm:'chatOrgasm',
+  roomSeduce:'seduce', roomSeduceOrgasm:'seduceOrgasm',
+};
+const bossPool = (enemy, sceneKey) => {
+  const bk = enemy?.isBoss ? BOSS_KEY[sceneKey] : null;
+  return (bk && BOSS_TEXTS[bk]) || SCENE_TEXTS[sceneKey];
+};
 
 // ╔════════════════════════════════════════════════════════════════════╗
 // ║ SECTION 1: 全域樣式 — BR / BB / LOG_COLORS / S                      ║
@@ -2774,7 +2782,7 @@ const TowerGame = () => {
     actionRef.current = true;
     const e = genBoss(player);
     addSep();
-    addLog(formatText(pick(BOSS_TEXTS.bossEntry), e.name, 0, bustDesc(), hipsDesc()), 'story');
+    addLog(formatText(pick(BOSS_TEXTS.entry), e.name, 0, bustDesc(), hipsDesc()), 'story');
     e.entryClothes = {...player.clothes};
     setEnemy(e);
     actionRef.current = false;
