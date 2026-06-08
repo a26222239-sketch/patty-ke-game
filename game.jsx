@@ -198,7 +198,8 @@
 //   地點前綴（首字小寫，依「玩家所在地點」命名）：
 //     room*     房間場景
 //     bath*     浴室場景
-//     shop*     商店場景（含老闆索取折扣的服務）
+//     shop*     商店前台場景（含老闆索取折扣的服務）
+//     shopRest* 商店休息區（肉償・老闆阿坤的完整服務）；與前台 shop* 區分但同屬商店
 //     toilet*   公廁場景（野戰）
 //     ※「野戰」只是概念，分類一律「靠地點」：用該地點當前綴（toilet*、alley* 巷弄…），
 //       不可用 field*／street* 之類的「概念前綴」。新地點同理：以該地點為前綴。
@@ -416,16 +417,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Heart, ArrowUp, Beaker, ChevronRight, Bed, Baby, HeartHandshake,
          Store, Coins, Shirt, ShieldCheck, User, Scissors, PenTool, Flame } from 'lucide-react';
-import { SCENE_TEXTS, HAIR_PREF_HIT_TEXTS, PREGNANT_WAKE_TEXTS, BODYHAIR_GROW_TEXTS, STAIN_TEXTS, BATH_WASH_TEXTS, BOSS_TEXTS } from './texts.js';
-// 肉償休息區老闆文本：娼館池鍵 → BOSS_TEXTS 對應鍵（BOSS_TEXTS 用獨立鍵名，
-// 不與娼館 room* 重名，避免搜尋/改文本時混淆）。未列入或未填者自動回退娼館文本。
+import { SCENE_TEXTS, HAIR_PREF_HIT_TEXTS, PREGNANT_WAKE_TEXTS, BODYHAIR_GROW_TEXTS, STAIN_TEXTS, BATH_WASH_TEXTS } from './texts.js';
+// 肉償休息區老闆文本：遵守規則 N（地點+行為），歸在「商店休息區」地點 = shopRest*，
+// 與前台 shop* 區分。下表把娼館池鍵對應到 shopRest* 池；未列入或未填者自動回退娼館文本。
 const BOSS_KEY = {
-  roomChat:'chat', roomChatOrgasm:'chatOrgasm',
-  roomSeduce:'seduce', roomSeduceOrgasm:'seduceOrgasm',
+  roomChat:'shopRestChat', roomChatOrgasm:'shopRestChatOrgasm',
+  roomSeduce:'shopRestSeduce', roomSeduceOrgasm:'shopRestSeduceOrgasm',
 };
 const bossPool = (enemy, sceneKey) => {
   const bk = enemy?.isBoss ? BOSS_KEY[sceneKey] : null;
-  return (bk && BOSS_TEXTS[bk]) || SCENE_TEXTS[sceneKey];
+  return (bk && SCENE_TEXTS[bk]) || SCENE_TEXTS[sceneKey];
 };
 
 // ╔════════════════════════════════════════════════════════════════════╗
@@ -2782,7 +2783,7 @@ const TowerGame = () => {
     actionRef.current = true;
     const e = genBoss(player);
     addSep();
-    addLog(formatText(pick(BOSS_TEXTS.entry), e.name, 0, bustDesc(), hipsDesc()), 'story');
+    addLog(formatText(pick(SCENE_TEXTS.shopRestEntry), e.name, 0, bustDesc(), hipsDesc()), 'story');
     e.entryClothes = {...player.clothes};
     setEnemy(e);
     actionRef.current = false;
