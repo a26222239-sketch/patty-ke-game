@@ -409,7 +409,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Heart, ArrowUp, Beaker, ChevronRight, Bed, Baby, HeartHandshake,
          Store, Coins, Shirt, ShieldCheck, User, Scissors, PenTool, Flame } from 'lucide-react';
-import { SCENE_TEXTS, HAIR_PREF_HIT_TEXTS, PREGNANT_WAKE_TEXTS, BODYHAIR_GROW_TEXTS, STAIN_TEXTS, BATH_WASH_TEXTS, PREG_BODY } from './texts.js';
+import { SCENE_TEXTS, HAIR_PREF_HIT_TEXTS, PREGNANT_WAKE_TEXTS, BODYHAIR_GROW_TEXTS, STAIN_TEXTS, BATH_WASH_TEXTS } from './texts.js';
 
 // ╔════════════════════════════════════════════════════════════════════╗
 // ║ SECTION 1: 全域樣式 — BR / BB / LOG_COLORS / S                      ║
@@ -1046,47 +1046,23 @@ const getPregnancyStage = (p) => {
 // ─────────────────────────────────────────────────────────────────────
 // 11.3 三圍與罩杯 — getBodyMeasurements / getCurrentCup
 // ─────────────────────────────────────────────────────────────────────
-// 懷孕/產後 連續身材增量（隨天數平滑變化，不再到分期才硬跳）
-const getPregBodyAdd = (p) => {
-  if (p.isPregnant) {
-    const t = Math.min(1, (p.pregnantDays||0) / 270);   // 0..1 孕期進度
-    return { bust: 16 * t, waist: 24 * t * t };          // 胸圍線性、腰圍 ease-in（孕肚中後期才明顯）
-  }
-  if ((p.birthCount||0) > 0) {
-    const recover = Math.max(0, 1 - (p.postBirthDays||0) / 90); // 產後約 90 天線性退回孕前
-    return { bust: 16 * recover, waist: 0 };
-  }
-  return { bust: 0, waist: 0 };
-};
 const getBodyMeasurements = (p) => {
-  const a = getPregBodyAdd(p);
-  return { bust: Math.round(p.bust + a.bust), waist: Math.round(p.waist + a.waist), hips: p.hips };
-};
-const getCurrentCup = (p) => {
-  const baseIdx = CUPS.indexOf(p.cup||'K');
-  const cupAdd = Math.round(getPregBodyAdd(p).bust / 4);  // 每 +4cm 升一罩杯，跟著連續胸圍走
-  return CUPS[Math.min(baseIdx + cupAdd, CUPS.length-1)];
+  const stage = getPregnancyStage(p);
+  const bustAdd  = [0, 4, 8, 16][stage];   // 胸圍增加：初+4, 中+8, 晚+16cm
+  const waistAdd = [0, 4, 12, 24][stage];  // 腰圍增加：初+4, 中+12, 晚+24cm（晚期72+24=96，接近臀圍102）
+  return {
+    bust:  p.bust  + bustAdd,
+    waist: p.waist + waistAdd,
+    hips:  p.hips,
+  };
 };
 
-// ── 孕期身體佔位符：取「目前狀態」對應的池 key ──
-const pregAreolaKey = (p) => p.isPregnant ? ['normal','early','mid','late'][getPregnancyStage(p)]
-                                          : ((p.birthCount||0) > 0 ? 'late' : 'normal');
-const pregBreastKey = (p) => 'lv' + Math.min(4, Math.round(getPregBodyAdd(p).bust / 4));
-const pregBellyKey  = (p) => { const w = getPregBodyAdd(p).waist; if (w < 2) return null; if (w < 9) return 'slight'; if (w < 17) return 'clear'; return 'big'; };
-const pregMilkKey   = (p) => {
-  if (p.isPregnant && getPregnancyStage(p) === 3) return 'colostrum';                                  // 孕後期初乳
-  if (!p.isPregnant && (p.birthCount||0) > 0 && (p.postBirthDays||0) > 0 && (p.postBirthDays||0) <= 60) return 'milk'; // 產後60天泌乳
-  return null;
-};
-// 把 5 個孕期佔位符換成「當下狀態」隨機抽一條（函式回呼 → 同一行多次出現也各抽各的）
-const resolvePregPlaceholders = (text, p) => {
-  if (!text || text.indexOf('{') === -1) return text;
-  return text
-    .replace(/{AREOLA_COLOR}/g, () => pick(PREG_BODY.AREOLA_COLOR[pregAreolaKey(p)]))
-    .replace(/{AREOLA_SIZE}/g,  () => pick(PREG_BODY.AREOLA_SIZE[pregAreolaKey(p)]))
-    .replace(/{BREAST_SIZE}/g,  () => pick(PREG_BODY.BREAST_SIZE[pregBreastKey(p)]))
-    .replace(/{BELLY_SIZE}/g,   () => { const k = pregBellyKey(p); return k ? pick(PREG_BODY.BELLY_SIZE[k]) : ''; })
-    .replace(/{MILK}/g,         () => { const k = pregMilkKey(p);  return k ? pick(PREG_BODY.MILK[k]) : ''; });
+const getCurrentCup = (p) => {
+  // 用實際 cup 欄位加上懷孕罩杯增量，不用 bust 公式換算
+  const baseIdx = CUPS.indexOf(p.cup||'K');
+  const stage = getPregnancyStage(p);
+  const cupAdd = [0, 1, 2, 4][stage]; // 早期+1罩杯, 中期+2, 晚期+4（著床期 0 無變化）
+  return CUPS[Math.min(baseIdx + cupAdd, CUPS.length-1)];
 };
 
 // ─────────────────────────────────────────────────────────────────────
@@ -1359,11 +1335,11 @@ const getRevealDesc = (player, slot) => {
       if (t.breast)                  parts.push(`乳房的${t.breast.content}刺青`);
       if (player.piercings?.areola)  parts.push(`乳暈環`);
       if (!t.breast && !player.piercings?.areola) {
+        const cup = getCurrentCup(player);
+        const bust = getBodyMeasurements(player).bust;
         const stage = getPregnancyStage(player);
         const bustAdj = stage===3?'高度隆起、沉甸甸的':stage===2?'明顯豐滿的':'';
-        const aKey = pregAreolaKey(player);
-        const milk = pregMilkKey(player);
-        parts.push(`${bustAdj}巨大乳房，乳暈${pick(PREG_BODY.AREOLA_SIZE[aKey])}、${pick(PREG_BODY.AREOLA_COLOR[aKey])}${milk?`，乳尖滲著${pick(PREG_BODY.MILK[milk])}`:''}`);
+        parts.push(`${bustAdj}${bust}公分、${cup}罩杯的巨大乳房`);
       }
     }
     // 脫 top 時腋下直接露出（bra 沒袖子擋不住腋下）
@@ -1375,11 +1351,11 @@ const getRevealDesc = (player, slot) => {
     if (player.piercings?.areola) parts.push(`乳暈環`);
     if (t.breast)              parts.push(`乳房的${t.breast.content}刺青`);
     if (!t.breast && !player.piercings?.areola) {
+      const cup = getCurrentCup(player);
+      const bust = getBodyMeasurements(player).bust;
       const stage = getPregnancyStage(player);
       const bustAdj = stage===3?'沉甸甸的':stage===2?'豐滿飽脹的':'';
-      const aKey = pregAreolaKey(player);
-      const milk = pregMilkKey(player);
-      parts.push(`${bustAdj}裸胸與挺立的乳頭，乳暈${pick(PREG_BODY.AREOLA_SIZE[aKey])}、${pick(PREG_BODY.AREOLA_COLOR[aKey])}${milk?`，乳尖滲著${pick(PREG_BODY.MILK[milk])}`:''}`);
+      parts.push(`${bustAdj}${bust}公分、${cup}罩杯的裸胸與挺立的乳頭`);
     }
   } else if (slot==='bottom') {
     if (c.panties) parts.push(`【${c.panties.name}】`);
@@ -2049,8 +2025,8 @@ const TowerGame = () => {
   // 體力歸零由 UI 昏倒按鈕觸發（移除 useEffect 避免閉包問題）
 
   const MAX_LOGS = 60;
-  const addLog  = (msg, tag='default') => setLogs(l=>{const base=l.length>0&&l[0].tag==='__CLEAR__'?[]:l;const n=[...base,{msg:resolvePregPlaceholders(msg,player),tag}];return n.length>MAX_LOGS?n.slice(-MAX_LOGS):n;});
-  const addLogs = (arr) => setLogs(l=>{const base=l.length>0&&l[0].tag==='__CLEAR__'?[]:l;const n=[...base,...arr.map(([msg,tag='default'])=>({msg:resolvePregPlaceholders(msg,player),tag}))];return n.length>MAX_LOGS?n.slice(-MAX_LOGS):n;});
+  const addLog  = (msg, tag='default') => setLogs(l=>{const base=l.length>0&&l[0].tag==='__CLEAR__'?[]:l;const n=[...base,{msg,tag}];return n.length>MAX_LOGS?n.slice(-MAX_LOGS):n;});
+  const addLogs = (arr) => setLogs(l=>{const base=l.length>0&&l[0].tag==='__CLEAR__'?[]:l;const n=[...base,...arr.map(([msg,tag='default'])=>({msg,tag}))];return n.length>MAX_LOGS?n.slice(-MAX_LOGS):n;});
   const addSep  = () => setLogs([{msg:'',tag:'__CLEAR__'}]);
 
 
@@ -2188,15 +2164,18 @@ const TowerGame = () => {
   // 22.3 衍生資料 — gazeXxx / isXxx / bustDesc / hipsDesc / getPeriodText
   // ─────────────────────────────────────────────────────────────────
   const gazeTop = (p) => {
+    const cup = getCurrentCup(p);
+    const bust = getBodyMeasurements(p).bust;
     const stage = getPregnancyStage(p);
-    const aKey = pregAreolaKey(p);
-    // 胸部（去掉公分/罩杯，用形容詞依分期）
-    const breast = stage===3 ? `高度隆起、沉甸甸的巨大乳房`
-                 : stage===2 ? `脹大豐滿的乳房`
-                 : `白皙飽滿的裸胸`;
-    // 乳暈當前綴、以乳房名詞收尾 → 整體是單一名詞短語，可安全套進「赤裸的X上」「從X到Y」等緊湊句式
-    // （孕肚/乳汁不放入場凝視，避免多子句破壞那些句式；它們改由脫衣描述與場景文本呈現）
-    const parts = [`${pick(PREG_BODY.AREOLA_SIZE[aKey])}、${pick(PREG_BODY.AREOLA_COLOR[aKey])}乳暈的${breast}`];
+    const parts = [];
+    // 胸部描述（含懷孕狀態）
+    if (stage === 3) parts.push(`${bust}公分、${cup}罩杯的巨大乳房，高度隆起、沉甸甸的`);
+    else if (stage === 2) parts.push(`${bust}公分、${cup}罩杯的豐滿乳房`);
+    else parts.push(`${bust}公分、${cup}罩杯的裸胸`);
+    // 懷孕中期以上加肚子描述
+    if (stage === 2) parts.push(`以及明顯隆起的小腹`);
+    else if (stage === 3) parts.push(`以及高高隆起的大肚子`);
+    // 飾品和刺青
     if (p.piercings?.areola) parts.push(`乳頭上穿著乳暈環`);
     const t = p.tattoos||{};
     if (t.breast) parts.push(`乳房上刺著${t.breast.content}`);
