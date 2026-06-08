@@ -416,7 +416,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Heart, ArrowUp, Beaker, ChevronRight, Bed, Baby, HeartHandshake,
          Store, Coins, Shirt, ShieldCheck, User, Scissors, PenTool, Flame } from 'lucide-react';
-import { SCENE_TEXTS, HAIR_PREF_HIT_TEXTS, PREGNANT_WAKE_TEXTS, BODYHAIR_GROW_TEXTS, STAIN_TEXTS, BATH_WASH_TEXTS } from './texts.js';
+import { SCENE_TEXTS, HAIR_PREF_HIT_TEXTS, PREGNANT_WAKE_TEXTS, BODYHAIR_GROW_TEXTS, STAIN_TEXTS, BATH_WASH_TEXTS, BOSS_TEXTS } from './texts.js';
+// 肉償休息區：老闆(isBoss)優先用 BOSS_TEXTS 對應池，未填的鍵自動回退娼館文本
+const bossPool = (enemy, key) => (enemy?.isBoss && BOSS_TEXTS[key]) || SCENE_TEXTS[key];
 
 // ╔════════════════════════════════════════════════════════════════════╗
 // ║ SECTION 1: 全域樣式 — BR / BB / LOG_COLORS / S                      ║
@@ -2772,7 +2774,7 @@ const TowerGame = () => {
     actionRef.current = true;
     const e = genBoss(player);
     addSep();
-    addLog(`🚪 休息區的門在身後關上。老闆 ${SHOPKEEPER_NAME} 一臉得意地逼近，掐著柯妤潔的下巴：「敢偷我的東西……今天就用妳這身子，好好賠給我吧。」`, 'story');
+    addLog(formatText(pick(BOSS_TEXTS.bossEntry), e.name, 0, bustDesc(), hipsDesc()), 'story');
     e.entryClothes = {...player.clothes};
     setEnemy(e);
     actionRef.current = false;
@@ -3123,12 +3125,12 @@ const TowerGame = () => {
     if (didOrgasm) ({vol, newVol} = calcOrgasmOutput(enemy.semenVolume, newArousal, enemy.tierIdx||0));
     const revealsPreference = !enemy.revealedPreference && Math.random()<0.3;
     // 2. 選文本並輸出
-    const arr = gs==='bathroom' ? SCENE_TEXTS.bathChat : SCENE_TEXTS.roomChat;
+    const arr = gs==='bathroom' ? SCENE_TEXTS.bathChat : bossPool(enemy,'roomChat');
     const tpl = pick(arr);
     const text = formatText(tpl, enemy.name, vol, bustDesc(), hipsDesc());
     addLog(text, 'chat');
     if (didOrgasm) {
-      const orgText = formatText(pick(SCENE_TEXTS.roomChatOrgasm), enemy.name, vol, bustDesc(), hipsDesc());
+      const orgText = formatText(pick(bossPool(enemy,'roomChatOrgasm')), enemy.name, vol, bustDesc(), hipsDesc());
       addLog(orgText, 'sex');
     }
     if (revealsPreference) {
@@ -3171,7 +3173,7 @@ const TowerGame = () => {
     let vol=0, newVol=enemy.semenVolume;
     if (didOrgasm) ({vol, newVol} = calcOrgasmOutput(enemy.semenVolume, newArousal, enemy.tierIdx||0));
     // 2. 選文本並輸出
-    const arr = gs==='bathroom' ? SCENE_TEXTS.bathSeduce : SCENE_TEXTS.roomSeduce;
+    const arr = gs==='bathroom' ? SCENE_TEXTS.bathSeduce : bossPool(enemy,'roomSeduce');
     const tpl = pick(arr);
     const text = tpl
       .replace(/{E}/g, enemy.name)
@@ -3179,7 +3181,7 @@ const TowerGame = () => {
       .replace(/{BUST}/g, bustDesc());
     addLog(text, 'sex');
     if (didOrgasm) {
-      const orgText = formatText(pick(SCENE_TEXTS.roomSeduceOrgasm), enemy.name, vol, bustDesc(), hipsDesc());
+      const orgText = formatText(pick(bossPool(enemy,'roomSeduceOrgasm')), enemy.name, vol, bustDesc(), hipsDesc());
       addLog(orgText, 'sex');
     }
     // 3. 更新 state
