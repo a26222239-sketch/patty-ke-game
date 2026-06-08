@@ -1772,8 +1772,11 @@ const rollDiscount = (svc, traffic) => {
 };
 // off 比例 → 中文「折」字串（off 0.35 → "6.5"，off 0.10 → "9"）
 const formatZhe = (off) => String(Math.round((1-off)*100)/10);
+// 肉償成功率：依魅惑度，越高越高，達 MEAT_CHARM_FULL 即 100%
+const MEAT_CHARM_FULL = 80;
+const meatCompChance = (charm) => Math.min(1, Math.max(0, charm) / MEAT_CHARM_FULL);
 
-const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, onBack, area, setArea, footTraffic, onTalkBoss, discount=0, services=[], onAskDiscount, bossOffer, onAcceptOffer, onDeclineOffer, discountLocked, theftPhase, onLeave, onReturnAndLeave, onAttemptTheft, onCancelLeave, onCompensate, onMeatComp, onGotoJail, theftFine=0}) => {
+const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, onBack, area, setArea, footTraffic, onTalkBoss, discount=0, services=[], onAskDiscount, bossOffer, onAcceptOffer, onDeclineOffer, discountLocked, theftPhase, onLeave, onReturnAndLeave, onAttemptTheft, onCancelLeave, onCompensate, onMeatComp, onGotoJail, theftFine=0, meatFailed=false}) => {
   const [bossMenu, setBossMenu] = React.useState(false);
   const gold = <span className="text-yellow-300 text-lg font-bold">💰 {player.gold}G</span>;
   const cartTotal = cart.reduce((s,i)=>s+i.price, 0);
@@ -1796,13 +1799,24 @@ const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, o
       <div className="flex justify-between items-center"><h3 className="text-red-300 font-bold">🚨 被當場逮住</h3>{gold}</div>
       <div className="bg-red-950/40 rounded-lg p-3 border border-red-800/50 text-sm text-red-200 leading-relaxed">
         老闆 {SHOPKEEPER_NAME} 追了出來、揪住了柯妤潔。你得給個交代：
+        {meatFailed && <><br/><span className="text-pink-300 text-xs">老闆不吃肉償這套，堅持要妳拿錢賠。</span></>}
       </div>
       <button onClick={onCompensate} disabled={player.gold<theftFine}
         className={`w-full py-3 rounded-lg font-bold ${player.gold<theftFine?'bg-slate-800 text-slate-600':'bg-yellow-700 hover:bg-yellow-600 text-white'}`}>
         💸 賠償 {theftFine}G（商品價的 50%）{player.gold<theftFine?'（金幣不足）':''}
       </button>
-      <button onClick={onMeatComp} className="w-full py-3 bg-pink-800 hover:bg-pink-700 text-white rounded-lg font-bold">💋 肉償（以身體抵償）</button>
+      {!meatFailed && <button onClick={onMeatComp} className="w-full py-3 bg-pink-800 hover:bg-pink-700 text-white rounded-lg font-bold">💋 肉償（以身體抵償，看魅惑度）</button>}
       <button onClick={onGotoJail} className="w-full py-3 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg font-bold">🚓 拒絕 → 被送警局關押 48 小時</button>
+    </div>
+  );
+  if (theftPhase === 'meatRest') return (
+    <div className="space-y-3">
+      <div className="flex justify-between items-center"><h3 className="text-pink-300 font-bold">🚪 休息區</h3>{gold}</div>
+      <div className="bg-pink-950/30 rounded-lg p-3 border border-pink-800/40 text-sm text-pink-200 leading-relaxed">
+        老闆 {SHOPKEEPER_NAME} 把柯妤潔帶進了平時不對外開放的休息區……
+        <br/><span className="text-slate-500 text-xs">（肉償的詳細內容開發中，敬請期待）</span>
+      </div>
+      <button onClick={onLeave} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg font-bold">↩ 離開（回街道）</button>
     </div>
   );
   const BackToLobby = () => (
@@ -2176,7 +2190,8 @@ const TowerGame = () => {
   const [cart, setCart] = useState([]);  // 購物籃：服飾區「拿起」的物品，到櫃台結帳才扣款
   const [shopDiscount, setShopDiscount] = useState(0);  // 跟老闆服務換來的結帳折扣(0~1)
   const [bossOffer, setBossOffer] = useState(null);     // 老闆已接受、待柯妤潔決定的折扣 {svc, off, traffic}
-  const [theftPhase, setTheftPhase] = useState(null);   // 竊盜流程：null / 'warn'(離開警告) / 'caught'(被逮·賠償選擇)
+  const [theftPhase, setTheftPhase] = useState(null);   // 竊盜流程：null / 'warn'(離開警告) / 'caught'(被逮·賠償選擇) / 'meatRest'(肉償成功進休息區)
+  const [meatFailed, setMeatFailed] = useState(false);  // 肉償判定失敗（老闆拒絕、堅持賠錢）→ 隱藏肉償鈕
   const [shop,    setShop]    = useState([]);
   const [tattooDraft, setTattooDraft] = useState({loc:'',size:'',content:''});
   const [showRestMenu, setShowRestMenu] = useState(false);
@@ -2588,6 +2603,7 @@ const TowerGame = () => {
     setShopDiscount(0);
     setBossOffer(null);
     setTheftPhase(null);
+    setMeatFailed(false);
     setGs('shop');
     actionRef.current = false;
 
@@ -2646,7 +2662,7 @@ const TowerGame = () => {
   // ── 離開商店 / 竊盜 ───────────────────────────────────────────────
   // 統一離店：清空購物籃/折扣/竊盜狀態，回街道
   const leaveShop = () => {
-    setCart([]); setShopDiscount(0); setBossOffer(null); setTheftPhase(null);
+    setCart([]); setShopDiscount(0); setBossOffer(null); setTheftPhase(null); setMeatFailed(false);
     setPlayer(p=>({...p, shopSessionOpen:false}));
     setGs('street');
   };
@@ -2698,14 +2714,25 @@ const TowerGame = () => {
     actionRef.current = false;
     leaveShop();
   };
-  // 肉償（細節之後設計）：暫以佔位處理，商品歸還、脫身
+  // 肉償：柯妤潔暗示用身體抵償 → 依魅惑度判定。
+  //   失敗：老闆拒絕、堅持賠錢（隱藏肉償鈕，只剩賠償/警局）。
+  //   成功：商品歸還、自動進入平時不開放的「休息區」（內容待設計）。
   const doMeatCompensate = () => {
     if (actionRef.current) return;
     actionRef.current = true;
-    addLog(`💋 柯妤潔提出用身體向老闆 ${SHOPKEEPER_NAME} 抵償……（肉償細節開發中……）老闆悻悻收手，放她離開。`, 'story');
-    addLog('🛒 購物籃的商品被收回貨架。', 'hint');
-    actionRef.current = false;
-    leaveShop();
+    addLog('💋 ' + pick(SCENE_TEXTS.shopMeatOffer).replace(/{BOSS}/g, SHOPKEEPER_NAME), 'story');
+    const charm = calcCharm(player).total;
+    if (Math.random() < meatCompChance(charm)) {
+      addLog(`💋 老闆 ${SHOPKEEPER_NAME} 嚥了口口水，鬆開手、把柯妤潔往店內深處帶去……`, 'good');
+      addLog('🚪 平時不對外開放的【休息區】，今天為了肉償破例打開了。（休息區內容開發中……）', 'hint');
+      setCart([]);                 // 購物籃商品歸還貨架
+      setTheftPhase('meatRest');   // 進入休息區（不離店）
+      actionRef.current = false;
+    } else {
+      addLog('🙅 ' + pick(SCENE_TEXTS.shopMeatRefuse).replace(/{BOSS}/g, SHOPKEEPER_NAME), 'bad');
+      setMeatFailed(true);         // 肉償失敗，老闆堅持賠錢
+      actionRef.current = false;
+    }
   };
   // 拒絕賠償 → 送警局強制關押 48 小時，商品歸還
   const doGotoJail = () => {
@@ -3827,9 +3854,10 @@ const TowerGame = () => {
     // 中出文本
     const isBathDefeat = gs === 'bathroom';
     const enemyName = enemy?.name||'他';
+    // 通用失憶開場：柯妤潔想不起昏倒前發生什麼（讓死魚戰敗文本萬用）
+    addLog('💫 ' + pick(SCENE_TEXTS.sexDefeatedAmnesia), 'bad');
     if (isBathDefeat) {
-      // 浴室死魚：昏倒提示 → 浴室橋接(被全裸拖到房間床上，不含插入) → 串接房間死魚(無套內射昏死)
-      addLog('🛁 柯妤潔在浴室昏倒了……', 'bad');
+      // 浴室死魚：橋接(被全裸拖到房間床上，不含插入) → 串接房間死魚(無套內射昏死)
       addLog(pick(SCENE_TEXTS.bathSexDefeated).replace(/{E}/g, enemyName), 'bad');
     }
     addLog(pick(SCENE_TEXTS.roomSexDefeated).replace(/{E}/g, enemyName), 'bad');
@@ -3929,7 +3957,7 @@ const TowerGame = () => {
     onTalkBoss={()=>addLog(`老闆 ${SHOPKEEPER_NAME} 瞇眼笑了笑：「妹妹今天想找點什麼？」（互動開發中……）`,'hint')}
     theftPhase={theftPhase} onLeave={doLeaveShop} onReturnAndLeave={doReturnAndLeave} onAttemptTheft={doAttemptTheft}
     onCancelLeave={()=>setTheftPhase(null)} onCompensate={doCompensate} onMeatComp={doMeatCompensate} onGotoJail={doGotoJail}
-    theftFine={theftFine()} onBack={doLeaveShop} />;
+    theftFine={theftFine()} meatFailed={meatFailed} onBack={doLeaveShop} />;
   if (gs==='birth') return (
     <div className="space-y-3">
       <div className="bg-pink-900/30 rounded-xl p-4 border border-pink-700/40 text-center">
