@@ -1735,8 +1735,9 @@ const getFootTraffic = (timeMinutes) => {
 };
 const SHOPKEEPER_NAME = '阿坤';
 
-const ShopPanel = ({player, shop, onBuy, onBuyCondom, onBack, area, setArea, footTraffic, onTalkBoss}) => {
+const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, onBack, area, setArea, footTraffic, onTalkBoss}) => {
   const gold = <span className="text-yellow-300 text-lg font-bold">💰 {player.gold}G</span>;
+  const cartTotal = cart.reduce((s,i)=>s+i.price, 0);
   const BackToLobby = () => (
     <button onClick={()=>setArea('lobby')} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg font-bold">↩ 返回門口</button>
   );
@@ -1748,6 +1749,17 @@ const ShopPanel = ({player, shop, onBuy, onBuyCondom, onBack, area, setArea, foo
         <span className="text-3xl">🧔</span>
         <div><p className="text-amber-200 text-sm font-bold">老闆 {SHOPKEEPER_NAME}</p><p className="text-slate-500 text-xs">點我聊聊……</p></div>
       </button>
+      <div className="bg-slate-800/60 rounded-lg p-3 border border-amber-900/40">
+        <p className="text-amber-200 text-sm font-bold mb-1">🛒 購物籃</p>
+        {cart.length===0 ? <p className="text-slate-500 text-xs">還沒拿任何東西</p> : cart.map(i=>(
+          <div key={i.id} className="flex justify-between text-xs text-slate-300"><span>{i.name}</span><span>{i.price}G</span></div>
+        ))}
+        {cart.length>0 && <div className="flex justify-between text-sm font-bold text-yellow-300 mt-1 pt-1 border-t border-slate-700"><span>合計</span><span>{cartTotal}G</span></div>}
+        <button onClick={onCheckout} disabled={cart.length===0 || player.gold<cartTotal}
+          className={`w-full mt-2 py-2 rounded-lg text-sm font-bold transition-colors ${cart.length===0||player.gold<cartTotal?'bg-slate-800 text-slate-600':'bg-yellow-600 hover:bg-yellow-500 text-white'}`}>
+          💳 結帳{cart.length>0?` ${cartTotal}G`:''}{player.gold<cartTotal&&cart.length>0?'（金幣不足）':''}
+        </button>
+      </div>
       <div className="bg-slate-800/60 rounded-lg p-3 border border-cyan-900/40 flex justify-between items-center">
         <div>
           <p className="text-cyan-200 text-sm font-bold">🛡 保險套</p>
@@ -1774,13 +1786,14 @@ const ShopPanel = ({player, shop, onBuy, onBuyCondom, onBack, area, setArea, foo
         ):(
           <div key={item.id} className="bg-slate-800/60 rounded-lg p-3 border border-slate-700/40 flex justify-between items-center">
             <div><p className="text-slate-200 text-sm font-bold">{item.name}</p><p className={S.textXsGray}>{CAT[item.type||item.slot]} · 魅惑+{item.charm}</p></div>
-            <button onClick={()=>onBuy(item)} disabled={player.gold<item.price||player.wardrobe.includes(item.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${player.wardrobe.includes(item.id)?'bg-slate-700 text-slate-500':player.gold<item.price?'bg-slate-800 text-slate-600':'bg-yellow-600 hover:bg-yellow-500 text-white'}`}>
-              {player.wardrobe.includes(item.id)?'已擁有':`${item.price}G`}
+            <button onClick={()=>onToggleCart(item)} disabled={player.wardrobe.includes(item.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${player.wardrobe.includes(item.id)?'bg-slate-700 text-slate-500':cart.find(x=>x.id===item.id)?'bg-green-700 hover:bg-green-600 text-white':'bg-yellow-600 hover:bg-yellow-500 text-white'}`}>
+              {player.wardrobe.includes(item.id)?'已擁有':cart.find(x=>x.id===item.id)?'✓ 放回':`拿起 ${item.price}G`}
             </button>
           </div>
         ))}
       </div>
+      {cart.length>0 && <div className="text-center text-xs text-amber-300">🛒 已拿 {cart.length} 件・共 {cartTotal}G（到櫃台結帳）</div>}
       <BackToLobby/>
     </div>
   );
@@ -2044,6 +2057,7 @@ const TowerGame = () => {
   const [logs,    setLogs]    = useState([{msg:'歡迎來到柯妤潔的娼館。',tag:'hint'}]);
   const [gs,      setGs]      = useState('title');
   const [shopArea, setShopArea] = useState('lobby');  // 商店內裝子區：lobby(門口)/counter(櫃台)/clothing(服飾區)
+  const [cart, setCart] = useState([]);  // 購物籃：服飾區「拿起」的物品，到櫃台結帳才扣款
   const [shop,    setShop]    = useState([]);
   const [tattooDraft, setTattooDraft] = useState({loc:'',size:'',content:''});
   const [showRestMenu, setShowRestMenu] = useState(false);
@@ -2451,29 +2465,34 @@ const TowerGame = () => {
     setShop(makeShop(player.wardrobe, player.shopProgress||{}));
     setPlayer(p=>({...addMinutes(restockShop(p),15), shopSessionOpen:true}));
     setShopArea('lobby');
+    setCart([]);
     setGs('shop');
     actionRef.current = false;
 
   };
-  const doBuyItem = (item) => {
-    addSep();
-    if (leavingRef.current) return;
+  // 服飾區「拿起 / 放回」：只進出購物籃，不扣款
+  const toggleCart = (item) => {
+    setCart(c => c.find(x=>x.id===item.id) ? c.filter(x=>x.id!==item.id) : [...c, item]);
+  };
+  // 櫃台結帳：一次付清購物籃，扣款並入手
+  const doCheckout = () => {
     if (actionRef.current) return;
+    if (cart.length === 0) { addLog('🛒 購物籃是空的。','hint'); return; }
+    const total = cart.reduce((s,i)=>s+i.price, 0);
+    if (player.gold < total) { addLog(`💰 金幣不足，結帳需 ${total}G。`,'bad'); return; }
     actionRef.current = true;
-    if (player.gold < item.price) {
-      addLog('💰 金幣不足。','bad');
-      actionRef.current = false;
-      return;
-    }
+    const ids = cart.map(i=>i.id);
+    const names = cart.map(i=>i.name).join('、');
     setPlayer(p=>{
-      const newProg = {...(p.shopProgress||{}), [item.slot]:(p.shopProgress?.[item.slot]||0)+1};
-      const newWardrobe = [...p.wardrobe, item.id];
+      const newProg = {...(p.shopProgress||{})};
+      cart.forEach(i=>{ newProg[i.slot] = (newProg[i.slot]||0)+1; });
+      const newWardrobe = [...p.wardrobe, ...ids];
       setTimeout(()=>setShop(makeShop(newWardrobe, newProg)),0);
-      return {...p, gold:p.gold-item.price, wardrobe:newWardrobe, shopProgress:newProg};
+      return {...p, gold:p.gold-total, wardrobe:newWardrobe, shopProgress:newProg};
     });
-    addLog(`🛍 購買了【${item.name}】（-${item.price}G）`,'gold');
+    addLog(`💳 結帳：${names}（-${total}G）`,'gold');
+    setCart([]);
     actionRef.current = false;
-
   };
   const doBuyCondom = () => {
     addSep();
@@ -3657,10 +3676,10 @@ const TowerGame = () => {
     );
   }
   if (gs==='status') return <StatusPanel player={player} onBack={()=>setGs('explore')} />;
-  if (gs==='shop') return <ShopPanel player={player} shop={shop} onBuy={doBuyItem} onBuyCondom={doBuyCondom}
+  if (gs==='shop') return <ShopPanel player={player} shop={shop} cart={cart} onToggleCart={toggleCart} onCheckout={doCheckout} onBuyCondom={doBuyCondom}
     area={shopArea} setArea={setShopArea} footTraffic={getFootTraffic(player.timeMinutes)}
     onTalkBoss={()=>addLog(`老闆 ${SHOPKEEPER_NAME} 瞇眼笑了笑：「妹妹今天想找點什麼？」（互動開發中……）`,'hint')}
-    onBack={()=>{setPlayer(p=>({...p,shopSessionOpen:false}));setGs('street');}} />;
+    onBack={()=>{setCart([]);setPlayer(p=>({...p,shopSessionOpen:false}));setGs('street');}} />;
   if (gs==='birth') return (
     <div className="space-y-3">
       <div className="bg-pink-900/30 rounded-xl p-4 border border-pink-700/40 text-center">
@@ -3683,12 +3702,14 @@ const TowerGame = () => {
       <div className="space-y-2">
         <div className="text-center text-sm py-1" style={{color:'#c0a070'}}>🏙 你走在街道上……</div>
         <div className="text-xs font-bold pl-1" style={{color:'#8a6840'}}>地　點</div>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <button onClick={doOpenShop} className={`${shopOpen ? BR.primary : BR.dis} w-full text-sm`} style={shopOpen ? BR.primaryStyle : BR.disStyle}>{shopOpen?'🏪 商店':'🔒 打烊'}</button>
           <button onClick={()=>{setPlayer(p=>addMinutes(p,10));setGs('piercingShop');}}
             className={`w-full text-sm ${BR.ghost}`} style={{...BR.ghostStyle, color:'#c090e0', borderColor:'#6030a0', borderBottomColor:'#8040c0'}}>🎨 刺青店</button>
           <button onClick={()=>addLog('🚽 公廁（野戰地點）開發中……','hint')}
             className={`w-full text-sm ${BR.ghost}`} style={{...BR.ghostStyle, color:'#a0a8b0', borderColor:'#3a4048', borderBottomColor:'#505860'}}>🚽 公廁</button>
+          <button onClick={()=>addLog('🚓 警局開發中……','hint')}
+            className={`w-full text-sm ${BR.ghost}`} style={{...BR.ghostStyle, color:'#6c9cd8', borderColor:'#26456e', borderBottomColor:'#386090'}}>🚓 警局</button>
         </div>
         <div className="text-xs font-bold pl-1 pt-1" style={{color:'#8a6840'}}>行　動</div>
         <button onClick={()=>addLog('🚧 野戰系統開發中，敬請期待……','hint')}
