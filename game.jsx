@@ -1359,11 +1359,11 @@ const getRevealDesc = (player, slot) => {
       if (t.breast)                  parts.push(`乳房的${t.breast.content}刺青`);
       if (player.piercings?.areola)  parts.push(`乳暈環`);
       if (!t.breast && !player.piercings?.areola) {
-        const cup = getCurrentCup(player);
-        const bust = getBodyMeasurements(player).bust;
         const stage = getPregnancyStage(player);
         const bustAdj = stage===3?'高度隆起、沉甸甸的':stage===2?'明顯豐滿的':'';
-        parts.push(`${bustAdj}${bust}公分、${cup}罩杯的巨大乳房`);
+        const aKey = pregAreolaKey(player);
+        const milk = pregMilkKey(player);
+        parts.push(`${bustAdj}巨大乳房，乳暈${pick(PREG_BODY.AREOLA_SIZE[aKey])}、${pick(PREG_BODY.AREOLA_COLOR[aKey])}${milk?`，乳尖滲著${pick(PREG_BODY.MILK[milk])}`:''}`);
       }
     }
     // 脫 top 時腋下直接露出（bra 沒袖子擋不住腋下）
@@ -1375,11 +1375,11 @@ const getRevealDesc = (player, slot) => {
     if (player.piercings?.areola) parts.push(`乳暈環`);
     if (t.breast)              parts.push(`乳房的${t.breast.content}刺青`);
     if (!t.breast && !player.piercings?.areola) {
-      const cup = getCurrentCup(player);
-      const bust = getBodyMeasurements(player).bust;
       const stage = getPregnancyStage(player);
       const bustAdj = stage===3?'沉甸甸的':stage===2?'豐滿飽脹的':'';
-      parts.push(`${bustAdj}${bust}公分、${cup}罩杯的裸胸與挺立的乳頭`);
+      const aKey = pregAreolaKey(player);
+      const milk = pregMilkKey(player);
+      parts.push(`${bustAdj}裸胸與挺立的乳頭，乳暈${pick(PREG_BODY.AREOLA_SIZE[aKey])}、${pick(PREG_BODY.AREOLA_COLOR[aKey])}${milk?`，乳尖滲著${pick(PREG_BODY.MILK[milk])}`:''}`);
     }
   } else if (slot==='bottom') {
     if (c.panties) parts.push(`【${c.panties.name}】`);
@@ -2188,18 +2188,15 @@ const TowerGame = () => {
   // 22.3 衍生資料 — gazeXxx / isXxx / bustDesc / hipsDesc / getPeriodText
   // ─────────────────────────────────────────────────────────────────
   const gazeTop = (p) => {
-    const cup = getCurrentCup(p);
-    const bust = getBodyMeasurements(p).bust;
     const stage = getPregnancyStage(p);
-    const parts = [];
-    // 胸部描述（含懷孕狀態）
-    if (stage === 3) parts.push(`${bust}公分、${cup}罩杯的巨大乳房，高度隆起、沉甸甸的`);
-    else if (stage === 2) parts.push(`${bust}公分、${cup}罩杯的豐滿乳房`);
-    else parts.push(`${bust}公分、${cup}罩杯的裸胸`);
-    // 懷孕中期以上加肚子描述
-    if (stage === 2) parts.push(`以及明顯隆起的小腹`);
-    else if (stage === 3) parts.push(`以及高高隆起的大肚子`);
-    // 飾品和刺青
+    const aKey = pregAreolaKey(p);
+    // 胸部（去掉公分/罩杯，用形容詞依分期）
+    const breast = stage===3 ? `高度隆起、沉甸甸的巨大乳房`
+                 : stage===2 ? `脹大豐滿的乳房`
+                 : `白皙飽滿的裸胸`;
+    // 乳暈當前綴、以乳房名詞收尾 → 整體是單一名詞短語，可安全套進「赤裸的X上」「從X到Y」等緊湊句式
+    // （孕肚/乳汁不放入場凝視，避免多子句破壞那些句式；它們改由脫衣描述與場景文本呈現）
+    const parts = [`${pick(PREG_BODY.AREOLA_SIZE[aKey])}、${pick(PREG_BODY.AREOLA_COLOR[aKey])}乳暈的${breast}`];
     if (p.piercings?.areola) parts.push(`乳頭上穿著乳暈環`);
     const t = p.tattoos||{};
     if (t.breast) parts.push(`乳房上刺著${t.breast.content}`);
