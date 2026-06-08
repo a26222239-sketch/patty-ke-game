@@ -423,6 +423,7 @@ import { SCENE_TEXTS, HAIR_PREF_HIT_TEXTS, PREGNANT_WAKE_TEXTS, BODYHAIR_GROW_TE
 const BOSS_KEY = {
   roomChat:'shopRestChat', roomChatOrgasm:'shopRestChatOrgasm',
   roomSeduce:'shopRestSeduce', roomSeduceOrgasm:'shopRestSeduceOrgasm',
+  roomForeplayReject:'shopRestForeplayReject',
 };
 const bossPool = (enemy, sceneKey) => {
   const bk = enemy?.isBoss ? BOSS_KEY[sceneKey] : null;
@@ -3241,12 +3242,19 @@ const TowerGame = () => {
     const charmBonus = Math.min(0.15, calcCharm(player).total*0.001);
     const finalRate = enemy.foreplayCount===0 ? 1.0 : Math.min(0.98, baseRate - decayRate + profBonus + charmBonus);
     if (Math.random() > finalRate) {
-      const rejectTpl = pick(SCENE_TEXTS.roomForeplayReject).replace(/{E}/g, enemy.name);
+      const rejectTpl = pick(bossPool(enemy,'roomForeplayReject')).replace(/{E}/g, enemy.name);
       addLog(rejectTpl, 'bad');
-      // 客人急著做愛、拒絕繼續前戲 → 直接進入保險套詢問（做愛）
       const hole = enemy.mainActPref || 'vagina';
-      addLog(`⚠️ ${enemy.name}要求直接進入【${hole==='vagina'?'小穴':'肛門'}】。`,'hint');
-      setEnemy(e=>({...e, foreplayRejected:true, phase:'condomAsk', pendingHole:hole}));
+      if (enemy.isBoss) {
+        // 老闆一律無套，拒絕前戲後直接進入做愛（不問保險套）
+        const pool = hole==='vagina' ? bossPool(enemy,'roomNoCondomVagina') : bossPool(enemy,'roomNoCondomAnal');
+        addLog(pick(pool).replace(/{E}/g, enemy.name), 'story');
+        setEnemy(e=>({...e, foreplayRejected:true, phase:'sex', pendingHole:hole, condomEquipped:false, condomMode:'without'}));
+      } else {
+        // 客人急著做愛、拒絕繼續前戲 → 直接進入保險套詢問（做愛）
+        addLog(`⚠️ ${enemy.name}要求直接進入【${hole==='vagina'?'小穴':'肛門'}】。`,'hint');
+        setEnemy(e=>({...e, foreplayRejected:true, phase:'condomAsk', pendingHole:hole}));
+      }
       setShowForeplayMenu(false);
       actionRef.current = false;
       return;
@@ -3314,7 +3322,7 @@ const TowerGame = () => {
     }
     const didSwallow = didOrgasm && Math.random()<0.5;
     // 文本
-    const textPool = isBath ? SCENE_TEXTS.bathForeplay : SCENE_TEXTS.roomForeplay;
+    const textPool = isBath ? SCENE_TEXTS.bathForeplay : (enemy.isBoss ? SCENE_TEXTS.shopRestForeplay : SCENE_TEXTS.roomForeplay);
     let tpl;
     if (didOrgasm) {
       if (type === 'mouth') {
@@ -3328,7 +3336,7 @@ const TowerGame = () => {
         if (didSwallow && extra && extra.length) tpl += pick(extra);
       }
     } else {
-      const arousalPool = isBath ? SCENE_TEXTS.bathForeplayArousal : SCENE_TEXTS.roomForeplayArousal;
+      const arousalPool = isBath ? SCENE_TEXTS.bathForeplayArousal : (enemy.isBoss ? SCENE_TEXTS.shopRestForeplayArousal : SCENE_TEXTS.roomForeplayArousal);
       tpl = pick(arousalPool[type]);
     }
     const text = formatText(tpl, enemy.name, vol, bustDesc(), hipsDesc());
