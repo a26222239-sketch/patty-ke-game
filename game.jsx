@@ -1724,51 +1724,79 @@ const BathroomPanel = ({ player, enemy, onDoBath, onDoBathService, onDoForeplay,
   );
 };
 
-const ShopPanel = ({player, shop, onBuy, onBuyCondom, onBack, addLog}) => (
-  <div className="space-y-3">
-    <div className="flex justify-between items-center">
-      <h3 className="text-yellow-300 font-bold">🏪 衣物商店</h3>
-      <span className="text-yellow-300 text-lg font-bold">💰 {player.gold}G</span>
-    </div>
-    <div className="bg-slate-800/60 rounded-lg p-3 border border-cyan-900/40 flex justify-between items-center">
-      <div>
-        <p className="text-cyan-200 text-sm font-bold">🛡 保險套</p>
-        <p className={S.textXsGray}>每天限量 2 個 · 剩餘 {player.shopCondomsLeft||0} 個</p>
-      </div>
-      <button onClick={onBuyCondom}
-        disabled={!player.shopCondomsLeft || player.gold<CONDOM_PRICE}
-        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${(!player.shopCondomsLeft||player.gold<CONDOM_PRICE)?'bg-slate-800 text-slate-600':'bg-cyan-700 hover:bg-cyan-600 text-white'}`}>
-        {!player.shopCondomsLeft?'售完':`${CONDOM_PRICE}G`}
+// 商店人流（依營業 9:00–21:00 的鐘形曲線：開店少→午後尖峰→近打烊又少）；UI 只顯示形容詞、不顯示數字
+const FOOT_TRAFFIC_LABELS = ['門可羅雀','三三兩兩','人來人往','摩肩接踵','水泄不通'];
+const getFootTraffic = (timeMinutes) => {
+  const mins = ((timeMinutes % 1440) + 1440) % 1440;
+  if (mins < 540 || mins >= 1260) return null;            // 打烊
+  const t = (mins - 540) / 720;                           // 0(9:00)→1(21:00)
+  const v = Math.round(100 * (1 - Math.pow(2*t - 1, 2))); // 鐘形，15:00 尖峰 100
+  return FOOT_TRAFFIC_LABELS[v<=20?0 : v<=40?1 : v<=60?2 : v<=80?3 : 4];
+};
+const SHOPKEEPER_NAME = '阿坤';
+
+const ShopPanel = ({player, shop, onBuy, onBuyCondom, onBack, area, setArea, footTraffic, onTalkBoss}) => {
+  const gold = <span className="text-yellow-300 text-lg font-bold">💰 {player.gold}G</span>;
+  const BackToLobby = () => (
+    <button onClick={()=>setArea('lobby')} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg font-bold">↩ 返回門口</button>
+  );
+  // 櫃台：老闆 + 保險套
+  if (area==='counter') return (
+    <div className="space-y-3">
+      <div className="flex justify-between items-center"><h3 className="text-yellow-300 font-bold">🧾 櫃台</h3>{gold}</div>
+      <button onClick={onTalkBoss} className="w-full bg-slate-800/70 rounded-lg p-3 border border-amber-900/50 flex items-center gap-3 hover:bg-slate-800 transition-colors text-left">
+        <span className="text-3xl">🧔</span>
+        <div><p className="text-amber-200 text-sm font-bold">老闆 {SHOPKEEPER_NAME}</p><p className="text-slate-500 text-xs">點我聊聊……</p></div>
       </button>
-    </div>
-    <div className="grid grid-cols-1 gap-2">
-      {shop.map((item,i)=>item.sold?(
-        <div key={item.slot+i} className="bg-slate-900/40 rounded-lg p-3 border border-slate-800/40 flex justify-between items-center opacity-50">
-          <div>
-            <p className="text-slate-500 text-sm">{CAT[item.slot]||item.slot}</p>
-            <p className="text-slate-600 text-xs">目前暫無進貨</p>
-          </div>
-          <span className="text-slate-600 text-xs">─</span>
+      <div className="bg-slate-800/60 rounded-lg p-3 border border-cyan-900/40 flex justify-between items-center">
+        <div>
+          <p className="text-cyan-200 text-sm font-bold">🛡 保險套</p>
+          <p className={S.textXsGray}>每天限量 2 個 · 剩餘 {player.shopCondomsLeft||0} 個</p>
         </div>
-      ):(
-        <div key={item.id} className="bg-slate-800/60 rounded-lg p-3 border border-slate-700/40 flex justify-between items-center">
-          <div>
-            <p className="text-slate-200 text-sm font-bold">{item.name}</p>
-            <p className={S.textXsGray}>{CAT[item.type||item.slot]} · 魅惑+{item.charm}</p>
+        <button onClick={onBuyCondom} disabled={!player.shopCondomsLeft || player.gold<CONDOM_PRICE}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${(!player.shopCondomsLeft||player.gold<CONDOM_PRICE)?'bg-slate-800 text-slate-600':'bg-cyan-700 hover:bg-cyan-600 text-white'}`}>
+          {!player.shopCondomsLeft?'售完':`${CONDOM_PRICE}G`}
+        </button>
+      </div>
+      <BackToLobby/>
+    </div>
+  );
+  // 服飾區：買衣物
+  if (area==='clothing') return (
+    <div className="space-y-3">
+      <div className="flex justify-between items-center"><h3 className="text-yellow-300 font-bold">🛍 服飾區</h3>{gold}</div>
+      <div className="grid grid-cols-1 gap-2">
+        {shop.map((item,i)=>item.sold?(
+          <div key={item.slot+i} className="bg-slate-900/40 rounded-lg p-3 border border-slate-800/40 flex justify-between items-center opacity-50">
+            <div><p className="text-slate-500 text-sm">{CAT[item.slot]||item.slot}</p><p className="text-slate-600 text-xs">目前暫無進貨</p></div>
+            <span className="text-slate-600 text-xs">─</span>
           </div>
-          <button onClick={()=>onBuy(item)}
-            disabled={player.gold<item.price||player.wardrobe.includes(item.id)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${player.wardrobe.includes(item.id)?'bg-slate-700 text-slate-500':player.gold<item.price?'bg-slate-800 text-slate-600':'bg-yellow-600 hover:bg-yellow-500 text-white'}`}>
-            {player.wardrobe.includes(item.id)?'已擁有':`${item.price}G`}
-          </button>
-        </div>
-      ))}
+        ):(
+          <div key={item.id} className="bg-slate-800/60 rounded-lg p-3 border border-slate-700/40 flex justify-between items-center">
+            <div><p className="text-slate-200 text-sm font-bold">{item.name}</p><p className={S.textXsGray}>{CAT[item.type||item.slot]} · 魅惑+{item.charm}</p></div>
+            <button onClick={()=>onBuy(item)} disabled={player.gold<item.price||player.wardrobe.includes(item.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${player.wardrobe.includes(item.id)?'bg-slate-700 text-slate-500':player.gold<item.price?'bg-slate-800 text-slate-600':'bg-yellow-600 hover:bg-yellow-500 text-white'}`}>
+              {player.wardrobe.includes(item.id)?'已擁有':`${item.price}G`}
+            </button>
+          </div>
+        ))}
+      </div>
+      <BackToLobby/>
     </div>
-    <div className="flex gap-2">
-      <button onClick={onBack} className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg font-bold">返回</button>
+  );
+  // 門口（預設）：人流氛圍 + 進各區 + 離開
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-between items-center"><h3 className="text-yellow-300 font-bold">🏪 商店・門口</h3>{gold}</div>
+      <div className="bg-slate-800/40 rounded-lg p-3 border border-amber-900/30 text-center text-sm" style={{color:'#c0a070'}}>店裡此刻{footTraffic||'空無一人'}……</div>
+      <div className="grid grid-cols-2 gap-2">
+        <button onClick={()=>setArea('counter')} className="py-3 bg-slate-800 hover:bg-slate-700 text-amber-200 rounded-lg font-bold">🧾 櫃台</button>
+        <button onClick={()=>setArea('clothing')} className="py-3 bg-slate-800 hover:bg-slate-700 text-yellow-200 rounded-lg font-bold">🛍 服飾區</button>
+      </div>
+      <button onClick={onBack} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg font-bold">🚪 離開（回街道）</button>
     </div>
-  </div>
-);
+  );
+};
 
 const WardrobePanel = ({player, onEquip, onUnequip, onBack}) => {
   const slots = ['top','bra','bottom','panties','socks','shoes','ear','navel','areola','labia'];
@@ -2015,6 +2043,7 @@ const TowerGame = () => {
   const actionRef = useRef(false);
   const [logs,    setLogs]    = useState([{msg:'歡迎來到柯妤潔的娼館。',tag:'hint'}]);
   const [gs,      setGs]      = useState('title');
+  const [shopArea, setShopArea] = useState('lobby');  // 商店內裝子區：lobby(門口)/counter(櫃台)/clothing(服飾區)
   const [shop,    setShop]    = useState([]);
   const [tattooDraft, setTattooDraft] = useState({loc:'',size:'',content:''});
   const [showRestMenu, setShowRestMenu] = useState(false);
@@ -2421,6 +2450,7 @@ const TowerGame = () => {
     }
     setShop(makeShop(player.wardrobe, player.shopProgress||{}));
     setPlayer(p=>({...addMinutes(restockShop(p),15), shopSessionOpen:true}));
+    setShopArea('lobby');
     setGs('shop');
     actionRef.current = false;
 
@@ -3627,7 +3657,10 @@ const TowerGame = () => {
     );
   }
   if (gs==='status') return <StatusPanel player={player} onBack={()=>setGs('explore')} />;
-  if (gs==='shop') return <ShopPanel player={player} shop={shop} onBuy={doBuyItem} onBuyCondom={doBuyCondom} onBack={()=>{setPlayer(p=>({...p,shopSessionOpen:false}));setGs('street');}} />;
+  if (gs==='shop') return <ShopPanel player={player} shop={shop} onBuy={doBuyItem} onBuyCondom={doBuyCondom}
+    area={shopArea} setArea={setShopArea} footTraffic={getFootTraffic(player.timeMinutes)}
+    onTalkBoss={()=>addLog(`老闆 ${SHOPKEEPER_NAME} 瞇眼笑了笑：「妹妹今天想找點什麼？」（互動開發中……）`,'hint')}
+    onBack={()=>{setPlayer(p=>({...p,shopSessionOpen:false}));setGs('street');}} />;
   if (gs==='birth') return (
     <div className="space-y-3">
       <div className="bg-pink-900/30 rounded-xl p-4 border border-pink-700/40 text-center">
