@@ -433,7 +433,10 @@ const BOSS_KEY = {
   roomSexDefeated:'shopRestDefeated',
 };
 // 關店後做愛(isBossDate)：阿坤專屬主動文本 shopDate*；未填的鍵自動回退娼館 room*（room* 本就柯妤潔主動）
-const DATE_KEY = {};
+const DATE_KEY = {
+  roomChat:'shopDateChat', roomChatOrgasm:'shopDateChatOrgasm',
+  roomSeduce:'shopDateSeduce', roomSeduceOrgasm:'shopDateSeduceOrgasm',
+};
 const bossPool = (enemy, sceneKey) => {
   const bk = enemy?.isBoss ? BOSS_KEY[sceneKey] : (enemy?.isBossDate ? DATE_KEY[sceneKey] : null);
   return (bk && SCENE_TEXTS[bk]) || SCENE_TEXTS[sceneKey];
@@ -2929,7 +2932,7 @@ const TowerGame = () => {
     actionRef.current = true;
     const e = genBossDate(player);
     addSep();
-    addLog(`🌙 打烊後，老闆 ${SHOPKEEPER_NAME} 鎖上店門、把柯妤潔拉進店後的休息區：「店都關了，剩咱倆……陪老闆好好爽一場吧。」柯妤潔嫵媚一笑，主動勾上他的脖子：「坤哥早就想要了齁～人家好好伺候您。」`, 'story');
+    addLog('🌙 ' + formatText(pick(SCENE_TEXTS.shopDateEntry), e.name, 0, bustDesc(), hipsDesc()), 'story');
     e.entryClothes = {...player.clothes};
     setPlayer(p=>({...p, bossSatedDay:p.days}));   // 標記今天老闆已服務（不再答應其他）
     setEnemy(e);
