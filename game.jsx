@@ -443,7 +443,8 @@ const DATE_KEY = {
   roomFinishFrontNoCondom:'shopDateFinishFront', roomFinishBackNoCondom:'shopDateFinishBack',
   roomLeaveEndurance:'shopDateLeaveEndurance', roomLeaveSemen:'shopDateLeaveSemen', roomDrained:'shopDateDrained',
   roomSexDefeated:'shopDateDefeated',
-  // TODO（前戲尚未寫 shopDate 版，暫回退 room*）：roomForeplay/roomForeplayArousal/roomForeplayReject
+  roomForeplayReject:'shopDateForeplayReject',
+  // 前戲主池 shopDateForeplay/Arousal 由 doForeplay 直接判斷 isBossDate 取用（巢狀，非經此表）
   // TODO（戴套流程 shopDate 版未寫，暫回退 room*）：roomAskCondom*/roomAgreeCondom*/roomSkipCondom*/roomFinish*Condom/roomDrinkCondom
 };
 // ⚠ 技術債／待辦：肉償(shopRest*)文本需重新檢討（場景/姿勢一致性等），標記待後續處理。
