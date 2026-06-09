@@ -1866,7 +1866,7 @@ const bossServiceScene = (poolObj, key) => {
 const MEAT_CHARM_FULL = 80;
 const meatCompChance = (charm) => Math.min(1, Math.max(0, charm) / MEAT_CHARM_FULL);
 
-const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, onBack, area, setArea, footTraffic, shopClosed, onTalkBoss, discount=0, services=[], onAskDiscount, onAskService, onBossDate, bossOffer, onAcceptOffer, onDeclineOffer, bossService, onServiceStep, lowStamina, discountLocked, bossSated, theftPhase, onLeave, onReturnAndLeave, onAttemptTheft, onCancelLeave, onCompensate, onMeatComp, onGotoJail, theftFine=0, meatFailed=false}) => {
+const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, onBack, area, setArea, footTraffic, shopClosed, nearClose, onTalkBoss, discount=0, services=[], onAskDiscount, onAskService, onBossDate, bossOffer, onAcceptOffer, onDeclineOffer, bossService, onServiceStep, lowStamina, discountLocked, bossSated, theftPhase, onLeave, onReturnAndLeave, onAttemptTheft, onCancelLeave, onCompensate, onMeatComp, onGotoJail, theftFine=0, meatFailed=false}) => {
   const [bossMenu, setBossMenu] = React.useState(false);
   const gold = <span className="text-yellow-300 text-lg font-bold">💰 {player.gold}G</span>;
   const cartTotal = cart.reduce((s,i)=>s+i.price, 0);
@@ -1963,6 +1963,8 @@ const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, o
             ) : (
               <p className="text-slate-500 text-xs">已經打烊了，先到櫃台把購物籃裡的東西處理掉吧。</p>
             )
+          ) : nearClose ? (
+            <p className="text-slate-500 text-xs">老闆 {SHOPKEEPER_NAME} 看了眼時鐘：「快關店了，這會兒時間不夠玩，改天早點來吧。」（晚上 8 點後不接服務）</p>
           ) : (
             <>
               {services.map(svc=>(
@@ -2727,6 +2729,7 @@ const TowerGame = () => {
   const doAskDiscount = (svc) => {
     if (actionRef.current || bossOffer || bossService) return;
     if (cart.length === 0) { addLog('🛒 購物籃是空的，先拿點東西吧。','hint'); return; }
+    if ((Math.floor(player.timeMinutes/60)%24) >= 20) { addLog(`🕗 老闆 ${SHOPKEEPER_NAME} 看了眼時鐘：「快關店了，這會兒時間不夠玩，改天早點來吧。」`,'hint'); return; }
     if (player.bossSatedDay === player.days) { addLog('😏 老闆今天已經被妳伺候到爽夠了，擺擺手沒了興致。','hint'); return; }
     if (player.discountAttemptDay === player.days) { addLog('🚫 老闆今天已經陪妳玩過一回了，明天再來吧。','hint'); return; }
     actionRef.current = true;
@@ -2741,6 +2744,7 @@ const TowerGame = () => {
   const doAskService = (svc) => {
     if (actionRef.current || bossOffer || bossService) return;
     if (cart.length > 0) { addLog('🛒 購物籃有東西時老闆只談折扣；想單純賺錢請先清空購物籃。','hint'); return; }
+    if ((Math.floor(player.timeMinutes/60)%24) >= 20) { addLog(`🕗 老闆 ${SHOPKEEPER_NAME} 看了眼時鐘：「快關店了，這會兒時間不夠玩，改天早點來吧。」`,'hint'); return; }
     if (player.bossSatedDay === player.days) { addLog('😏 老闆今天已經被妳伺候到爽夠了，擺擺手沒了興致。','hint'); return; }
     if (player.discountAttemptDay === player.days) { addLog('🚫 老闆今天已經陪妳玩過一回了，明天再來吧。','hint'); return; }
     actionRef.current = true;
@@ -4187,7 +4191,7 @@ const TowerGame = () => {
   }
   if (gs==='status') return <StatusPanel player={player} onBack={()=>setGs('explore')} />;
   if (gs==='shop') return <ShopPanel player={player} shop={shop} cart={cart} onToggleCart={toggleCart} onCheckout={doCheckout} onBuyCondom={doBuyCondom}
-    area={shopArea} setArea={setShopArea} footTraffic={getFootTraffic(player.timeMinutes)} shopClosed={getFootTrafficValue(player.timeMinutes)===null}
+    area={shopArea} setArea={setShopArea} footTraffic={getFootTraffic(player.timeMinutes)} shopClosed={getFootTrafficValue(player.timeMinutes)===null} nearClose={(Math.floor(player.timeMinutes/60)%24)>=20 && getFootTrafficValue(player.timeMinutes)!==null}
     discount={shopDiscount} services={SHOP_DISCOUNT_SERVICES}
     onAskDiscount={doAskDiscount} onAskService={doAskService} onBossDate={doBossDate} bossOffer={bossOffer} onAcceptOffer={doAcceptOffer} onDeclineOffer={doDeclineOffer}
     bossService={bossService} onServiceStep={doServiceStep} lowStamina={player.hp < player.baseHp*0.2}
