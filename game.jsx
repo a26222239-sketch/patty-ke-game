@@ -424,6 +424,13 @@ const BOSS_KEY = {
   roomChat:'shopRestChat', roomChatOrgasm:'shopRestChatOrgasm',
   roomSeduce:'shopRestSeduce', roomSeduceOrgasm:'shopRestSeduceOrgasm',
   roomForeplayReject:'shopRestForeplayReject',
+  roomNoCondomVagina:'shopRestNoCondomVagina', roomNoCondomAnal:'shopRestNoCondomAnal',
+  roomContinueNoCondomVagina:'shopRestContinueNoCondomVagina', roomContinueNoCondomAnal:'shopRestContinueNoCondomAnal',
+  roomSexFront:'shopRestSexFront', roomSexBack:'shopRestSexBack',
+  roomSexFrontArousal:'shopRestSexFrontArousal', roomSexBackArousal:'shopRestSexBackArousal',
+  roomFinishFrontNoCondom:'shopRestFinishFront', roomFinishBackNoCondom:'shopRestFinishBack',
+  roomLeaveEndurance:'shopRestLeaveEndurance', roomLeaveSemen:'shopRestLeaveSemen', roomDrained:'shopRestDrained',
+  roomSexDefeated:'shopRestDefeated',
 };
 const bossPool = (enemy, sceneKey) => {
   const bk = enemy?.isBoss ? BOSS_KEY[sceneKey] : null;
@@ -2272,19 +2279,19 @@ const TowerGame = () => {
       if (gs==='bathroom') {
         addLog(formatText(pick(SCENE_TEXTS.bathLeaveEndurance), e.name, 0,'',''), 'story');
       } else {
-        leaveText = formatText(pick(SCENE_TEXTS.roomLeaveEndurance), e.name,0,'','');
+        leaveText = formatText(pick(bossPool(enemy,'roomLeaveEndurance')), e.name,0,'','');
         addLog(leaveText,'story');
         addLog(formatText(pick(SCENE_TEXTS.roomLeaveEnduranceDress), e.name, 0,'',''), 'story');
       }
       bonusGold = totalPay;
       fameGain = FAME_BY_LEAVE.enemyHp;
     } else if (reason==='semen') {
-      const drainingText = formatText(pick(SCENE_TEXTS.roomDrained), e.name,0,'','');
+      const drainingText = formatText(pick(bossPool(enemy,'roomDrained')), e.name,0,'','');
       addLog(drainingText,'story');
       if (gs==='bathroom') {
         addLog(formatText(pick(SCENE_TEXTS.bathLeaveSemen), e.name, 0,'',''), 'story');
       } else {
-        addLog(formatText(pick(SCENE_TEXTS.roomLeaveSemen), e.name,0,'',''),'story');
+        addLog(formatText(pick(bossPool(enemy,'roomLeaveSemen')), e.name,0,'',''),'story');
         addLog(formatText(pick(SCENE_TEXTS.roomLeaveSemenDress), e.name, 0,'',''), 'story');
       }
       bonusGold = totalPay;
@@ -3655,8 +3662,8 @@ const TowerGame = () => {
     if (enemy.isBoss) {
       const first = enemy.condomMode !== 'without';
       const pool = first
-        ? (hole==='vagina' ? SCENE_TEXTS.roomNoCondomVagina : SCENE_TEXTS.roomNoCondomAnal)
-        : (hole==='vagina' ? SCENE_TEXTS.roomContinueNoCondomVagina : SCENE_TEXTS.roomContinueNoCondomAnal);
+        ? bossPool(enemy, hole==='vagina' ? 'roomNoCondomVagina' : 'roomNoCondomAnal')
+        : bossPool(enemy, hole==='vagina' ? 'roomContinueNoCondomVagina' : 'roomContinueNoCondomAnal');
       addLog(pick(pool).replace(/{E}/g, enemy.name), 'story');
       setEnemy(e=>({...e, phase:'sex', pendingHole:hole, condomEquipped:false, condomMode:'without'}));
       actionRef.current = false;
@@ -3753,10 +3760,10 @@ const TowerGame = () => {
     const profKey = hole;
     const isBath = gs==='bathroom';
     // 浴室做愛文本池選擇
-    const sexFrontPool = isBath ? SCENE_TEXTS.bathSexFront : SCENE_TEXTS.roomSexFront;
-    const sexBackPool  = isBath ? SCENE_TEXTS.bathSexBack  : SCENE_TEXTS.roomSexBack;
-    const sexFrontArousalPool = isBath ? SCENE_TEXTS.bathSexFrontArousal : SCENE_TEXTS.roomSexFrontArousal;
-    const sexBackArousalPool  = isBath ? SCENE_TEXTS.bathSexBackArousal  : SCENE_TEXTS.roomSexBackArousal;
+    const sexFrontPool = isBath ? SCENE_TEXTS.bathSexFront : bossPool(enemy,'roomSexFront');
+    const sexBackPool  = isBath ? SCENE_TEXTS.bathSexBack  : bossPool(enemy,'roomSexBack');
+    const sexFrontArousalPool = isBath ? SCENE_TEXTS.bathSexFrontArousal : bossPool(enemy,'roomSexFrontArousal');
+    const sexBackArousalPool  = isBath ? SCENE_TEXTS.bathSexBackArousal  : bossPool(enemy,'roomSexBackArousal');
     // 傷害
     const playerDmgMult = calcProfDmgMult(player.prof[profKey]||0)*dmgVariance();
     const enemyDmgMult  = calcEnemyDmgMult(player.prof[profKey]||0)*dmgVariance();
@@ -3793,7 +3800,7 @@ const TowerGame = () => {
       const finKey = isBath
         ? (isBack ? 'bathFinishBackNoCondom' : 'bathFinishFrontNoCondom')
         : (isBack ? (enemy.condomEquipped?'roomFinishBackCondom':'roomFinishBackNoCondom') : (enemy.condomEquipped?'roomFinishFrontCondom':'roomFinishFrontNoCondom'));
-      tpl = formatText(pick(SCENE_TEXTS[finKey]||SCENE_TEXTS.roomFinishFrontNoCondom), enemy.name, vol, bustDesc(), hipsDesc());
+      tpl = formatText(pick(bossPool(enemy,finKey)||SCENE_TEXTS.roomFinishFrontNoCondom), enemy.name, vol, bustDesc(), hipsDesc());
     } else {
       tpl = formatText(pick(isBack?sexBackArousalPool:sexFrontArousalPool), enemy.name, vol, bustDesc(), hipsDesc());
     }
@@ -3933,7 +3940,7 @@ const TowerGame = () => {
       addLog('🛁 柯妤潔在浴室昏倒了……', 'bad');
       addLog(pick(SCENE_TEXTS.bathSexDefeated).replace(/{E}/g, enemyName), 'bad');
     }
-    addLog(pick(SCENE_TEXTS.roomSexDefeated).replace(/{E}/g, enemyName), 'bad');
+    addLog(pick(bossPool(enemy,'roomSexDefeated')).replace(/{E}/g, enemyName), 'bad');
     // 起床文本緊接死魚文本（中間不輸出任何柯妤潔主觀視角文本，她已昏倒）
     addLog(pick(SCENE_TEXTS.wakeDefeated), 'story');
     if (enemy?.isBoss) addLog('……再次睜開眼，柯妤潔已經回到了娼館，天已大亮。', 'hint');
