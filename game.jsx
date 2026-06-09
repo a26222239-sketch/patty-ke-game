@@ -1930,7 +1930,7 @@ const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, o
               {bossOffer.mode==='pay' ? (
                 <p className="text-pink-100 text-sm leading-relaxed">老闆願意接受【{bossOffer.svc.label}】，付妳 <span className="text-yellow-300 font-bold">{bossOffer.pay}G</span> 當報酬。要答應嗎？</p>
               ) : (
-                <p className="text-pink-100 text-sm leading-relaxed">老闆願意接受【{bossOffer.svc.label}】，給妳打 <span className="text-yellow-300 font-bold">{formatZhe(bossOffer.off)}</span> 折（省 {Math.round(bossOffer.off*100)}%）。要答應嗎？</p>
+                <p className="text-pink-100 text-sm leading-relaxed">老闆願意接受【{bossOffer.svc.label}】，給妳打 <span className="text-yellow-300 font-bold">{formatZhe(bossOffer.off)}</span> 折、省 {Math.round(bossOffer.off*100)}%。要答應嗎？</p>
               )}
               <div className="grid grid-cols-2 gap-2">
                 <button onClick={onAcceptOffer} className="py-2 rounded-lg bg-pink-700 hover:bg-pink-600 text-white text-sm font-bold">答應並服務</button>
@@ -2752,7 +2752,7 @@ const TowerGame = () => {
     // 體力 <20% → 柯妤潔主動喊累放棄，老闆不爽、不給獎
     if (player.hp < player.baseHp * 0.2) {
       addLog('🥵 ' + pick(SCENE_TEXTS.shopServiceTapout[svc.key]).replace(/{BOSS}/g, SHOPKEEPER_NAME), 'bad');
-      addLog(`🧔 老闆 ${SHOPKEEPER_NAME} 沒能盡興，不滿地哼了一聲：「半途而廢，這可不算數。」（${bs.mode==='pay'?'沒有報酬':'沒有折扣'}）`, 'hint');
+      addLog(`🧔 老闆 ${SHOPKEEPER_NAME} 沒能盡興，不滿地哼了一聲：「半途而廢，這可不算數。」柯妤潔這次拿不到${bs.mode==='pay'?'報酬':'折扣'}。`, 'hint');
       setBossService(null);
       actionRef.current = false;
       return;
@@ -2768,14 +2768,14 @@ const TowerGame = () => {
         if (bs.mode === 'pay') {
           const partial = Math.max(5, Math.round((bs.pay*ratio)/5)*5);
           setPlayer(p=>({...p, gold:p.gold+partial}));
-          addLog(`💰 雖然中途被打斷，老闆還是按進度付了柯妤潔 ${partial}G（已完成 ${bs.step}/4）。`, 'gold');
+          addLog(`💰 雖然中途被打斷，老闆還是按進度付了柯妤潔 ${partial}G，這次做完了 ${bs.step}/4。`, 'gold');
         } else {
           const partialOff = Math.max(0.05, Math.round(bs.off*ratio*20)/20);
           setShopDiscount(d=>Math.max(d, partialOff));
-          addLog(`💳 雖然中途被打斷，老闆還是按進度給了打 ${formatZhe(partialOff)} 折（已完成 ${bs.step}/4）。`, 'gold');
+          addLog(`💳 雖然中途被打斷，老闆還是按進度給了打 ${formatZhe(partialOff)} 折，這次做完了 ${bs.step}/4。`, 'gold');
         }
       } else {
-        addLog('（還沒進入狀況就被打斷，這次沒有任何報酬。）', 'hint');
+        addLog('還沒進入狀況就被客人打斷，這次什麼也沒拿到。', 'hint');
       }
       setBossService(null);
       actionRef.current = false;
@@ -2789,7 +2789,7 @@ const TowerGame = () => {
         addLog(`💰 老闆 ${SHOPKEEPER_NAME} 爽到不行，心滿意足地付給柯妤潔 ${bs.pay}G。`, 'gold');
       } else {
         setShopDiscount(d => Math.max(d, bs.off));
-        addLog(`💳 老闆 ${SHOPKEEPER_NAME} 爽到不行，給柯妤潔結帳打 ${formatZhe(bs.off)} 折（省 ${Math.round(bs.off*100)}%）。`, 'gold');
+        addLog(`💳 老闆 ${SHOPKEEPER_NAME} 爽到不行，給柯妤潔結帳打 ${formatZhe(bs.off)} 折，省 ${Math.round(bs.off*100)}%。`, 'gold');
       }
       setBossService(null);
     } else {
