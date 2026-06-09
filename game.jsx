@@ -1802,13 +1802,17 @@ const SHOPKEEPER_NAME = '阿坤';
 // 任一終點（老闆拒絕／柯妤潔不接受／服務完成）都用掉當日機會，隔天開店才能再要求。
 //   acceptPenalty：服務越明顯，老闆越怕被店裡客人看到，接受率額外扣的基數（露胸最隱密、口交最明顯）。
 //   discountRange：成功完成可得的折扣區間(off 比例)；人流越高越刺激→折扣越靠區間上限。
-// 服務耗時：手交/口交比照娼院前戲固定 15 分；露胸較單純給 10 分（時間消耗與妓院一致）
+// 老闆服務（共用於「索取折扣」與「提供性服務(收費)」兩模式）。
+//   time：耗時（手交/口交 15 分、露胸 10 分，與娼院前戲一致）。
+//   hp：體力消耗，比照娼院前戲 FOREPLAY_DMG.player（hand5/mouth7/boob6）→露胸較輕給4。
+//   discountRange：折扣模式(有購物籃)→換折扣(off比例)。
+//   payRange：收費模式(無購物籃)→老闆付的報酬(G)，人流越高越刺激→越靠上限。
 const SHOP_DISCOUNT_SERVICES = [
-  { key:'flash', label:'露出胸部', risk:'較隱密',   acceptPenalty:0.00, discountRange:[0.05, 0.15], time:10 },
-  { key:'hand',  label:'手交',     risk:'有點明顯', acceptPenalty:0.15, discountRange:[0.15, 0.35], time:15 },
-  { key:'oral',  label:'口交',     risk:'非常明顯', acceptPenalty:0.30, discountRange:[0.30, 0.60], time:15 },
+  { key:'flash', label:'露出胸部', risk:'較隱密',   acceptPenalty:0.00, discountRange:[0.05, 0.15], payRange:[20, 50],  time:10, hp:4 },
+  { key:'hand',  label:'手交',     risk:'有點明顯', acceptPenalty:0.15, discountRange:[0.15, 0.35], payRange:[40, 100], time:15, hp:5 },
+  { key:'oral',  label:'口交',     risk:'非常明顯', acceptPenalty:0.30, discountRange:[0.30, 0.60], payRange:[80, 200], time:15, hp:7 },
 ];
-// 老闆接受率：人流越多越怕被看到；服務越明顯再扣基數。夾在 0~1
+// 老闆接受率：人流越多越怕被看到；服務越明顯再扣基數。夾在 0~1（折扣/收費共用）
 const discountAcceptChance = (svc, traffic) =>
   Math.max(0, Math.min(1, (100 - (traffic ?? 0)) / 100 - svc.acceptPenalty));
 // 老闆開出的折扣(off 比例)：人流越高越刺激→越靠區間上限，加小幅隨機，量化到 5% 一檔、夾回區間
@@ -1819,13 +1823,29 @@ const rollDiscount = (svc, traffic) => {
   const v = center + (Math.random()*2 - 1) * (hi - lo) * 0.20;
   return Math.max(lo, Math.min(hi, Math.round(v*20)/20));
 };
-// off 比例 → 中文「折」字串（off 0.35 → "6.5"，off 0.10 → "9"）
-const formatZhe = (off) => String(Math.round((1-off)*100)/10);
+// 老闆開出的報酬(G)：人流越高越刺激→越靠區間上限，加小幅隨機，量化到 5G 一檔、夾回區間
+const rollPay = (svc, traffic) => {
+  const [lo, hi] = svc.payRange;
+  const t = Math.max(0, Math.min(1, (traffic ?? 0) / 100));
+  const center = lo + (hi - lo) * t;
+  const v = center + (Math.random()*2 - 1) * (hi - lo) * 0.20;
+  return Math.round(Math.max(lo, Math.min(hi, v)) / 5) * 5;
+};
+// 老闆服務場景組裝（折扣/收費共用結構）：flash 扁平、hand spill+swallowExtra、oral swallow。
+// 場景文本只含 {BOSS}（無 {V_*}），回傳已替換的字串。
+const bossServiceScene = (poolObj, key) => {
+  const pool = (poolObj && poolObj[key]) || [];
+  let tpl;
+  if (Array.isArray(pool)) tpl = pick(pool);
+  else if (pool.swallow) tpl = pick(pool.swallow);
+  else { tpl = pick(pool.spill||[]); if (pool.swallowExtra && pool.swallowExtra.length) tpl += pick(pool.swallowExtra); }
+  return (tpl||'').replace(/{BOSS}/g, SHOPKEEPER_NAME);
+};
 // 肉償成功率：依魅惑度，越高越高，達 MEAT_CHARM_FULL 即 100%
 const MEAT_CHARM_FULL = 80;
 const meatCompChance = (charm) => Math.min(1, Math.max(0, charm) / MEAT_CHARM_FULL);
 
-const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, onBack, area, setArea, footTraffic, onTalkBoss, discount=0, services=[], onAskDiscount, bossOffer, onAcceptOffer, onDeclineOffer, discountLocked, theftPhase, onLeave, onReturnAndLeave, onAttemptTheft, onCancelLeave, onCompensate, onMeatComp, onGotoJail, theftFine=0, meatFailed=false}) => {
+const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, onBack, area, setArea, footTraffic, onTalkBoss, discount=0, services=[], onAskDiscount, onAskService, bossOffer, onAcceptOffer, onDeclineOffer, discountLocked, bossSated, theftPhase, onLeave, onReturnAndLeave, onAttemptTheft, onCancelLeave, onCompensate, onMeatComp, onGotoJail, theftFine=0, meatFailed=false}) => {
   const [bossMenu, setBossMenu] = React.useState(false);
   const gold = <span className="text-yellow-300 text-lg font-bold">💰 {player.gold}G</span>;
   const cartTotal = cart.reduce((s,i)=>s+i.price, 0);
@@ -1881,35 +1901,41 @@ const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, o
   if (area==='counter') return (
     <div className="space-y-3">
       <div className="flex justify-between items-center"><h3 className="text-yellow-300 font-bold">🧾 櫃台</h3>{gold}</div>
-      <button onClick={()=>{ if(cart.length>0) setBossMenu(v=>!v); else onTalkBoss(); }}
+      <button onClick={()=>setBossMenu(v=>!v)}
         className="w-full bg-slate-800/70 rounded-lg p-3 border border-amber-900/50 flex items-center gap-3 hover:bg-slate-800 transition-colors text-left">
         <span className="text-3xl">🧔</span>
         <div className="flex-1"><p className="text-amber-200 text-sm font-bold">老闆 {SHOPKEEPER_NAME}</p>
-          <p className="text-slate-500 text-xs">{cart.length>0 ? (bossMenu?'收起…':'點我索取折扣…') : '點我聊聊…'}</p></div>
-        {cart.length>0 && <span className="text-amber-300 text-xs">{bossMenu?'▴':'▾'}</span>}
+          <p className="text-slate-500 text-xs">{bossMenu?'收起…':(cart.length>0?'點我索取折扣…':'點我提供性服務賺錢…')}</p></div>
+        <span className="text-amber-300 text-xs">{bossMenu?'▴':'▾'}</span>
       </button>
-      {bossMenu && cart.length>0 && (
+      {bossMenu && (
         <div className="rounded-lg p-3 border border-pink-900/50 space-y-2" style={{background:'#1c0f16'}}>
-          <p className="text-pink-300 text-xs font-bold">💋 索取折扣（趁櫃台沒客人，為老闆服務換折扣）</p>
-          {discountLocked ? (
-            <p className="text-slate-500 text-xs">老闆 {SHOPKEEPER_NAME} 今天被嚇到了，不肯再冒險。明天開店後再來吧。</p>
+          <p className="text-pink-300 text-xs font-bold">{cart.length>0 ? '💋 索取折扣（為老闆服務換折扣）' : '💋 提供性服務（為老闆服務賺錢）'}</p>
+          {bossSated ? (
+            <p className="text-slate-500 text-xs">老闆 {SHOPKEEPER_NAME} 今天已經被妳伺候到爽夠了，沒了興致。</p>
+          ) : discountLocked ? (
+            <p className="text-slate-500 text-xs">老闆 {SHOPKEEPER_NAME} 今天不肯再冒險了，明天開店後再來吧。</p>
           ) : bossOffer ? (
             <div className="space-y-2">
-              <p className="text-pink-100 text-sm leading-relaxed">老闆願意接受【{bossOffer.svc.label}】，給妳打 <span className="text-yellow-300 font-bold">{formatZhe(bossOffer.off)}</span> 折（省 {Math.round(bossOffer.off*100)}%）。要答應嗎？</p>
+              {bossOffer.mode==='pay' ? (
+                <p className="text-pink-100 text-sm leading-relaxed">老闆願意接受【{bossOffer.svc.label}】，付妳 <span className="text-yellow-300 font-bold">{bossOffer.pay}G</span> 當報酬。要答應嗎？</p>
+              ) : (
+                <p className="text-pink-100 text-sm leading-relaxed">老闆願意接受【{bossOffer.svc.label}】，給妳打 <span className="text-yellow-300 font-bold">{formatZhe(bossOffer.off)}</span> 折（省 {Math.round(bossOffer.off*100)}%）。要答應嗎？</p>
+              )}
               <div className="grid grid-cols-2 gap-2">
                 <button onClick={onAcceptOffer} className="py-2 rounded-lg bg-pink-700 hover:bg-pink-600 text-white text-sm font-bold">答應並服務</button>
-                <button onClick={onDeclineOffer} className="py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-bold">不划算，拒絕</button>
+                <button onClick={onDeclineOffer} className="py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-bold">{bossOffer.mode==='pay'?'嫌太少，拒絕':'不划算，拒絕'}</button>
               </div>
             </div>
           ) : (
             <>
               {services.map(svc=>(
-                <button key={svc.key} onClick={()=>onAskDiscount(svc)}
+                <button key={svc.key} onClick={()=>cart.length>0 ? onAskDiscount(svc) : onAskService(svc)}
                   className="w-full flex justify-between items-center px-3 py-2 rounded-lg bg-pink-900/30 hover:bg-pink-800/40 text-pink-100 text-sm font-bold">
                   <span>{svc.label}</span><span className="text-pink-400 text-[10px]">{svc.risk}</span>
                 </button>
               ))}
-              <p className="text-slate-600 text-[10px]">人越少老闆越敢答應；但人越多、服務越大膽，折扣越高。機會每天只有一次。</p>
+              <p className="text-slate-600 text-[10px]">人越少老闆越敢答應；人越多、服務越大膽，{cart.length>0?'折扣越高':'報酬越高'}。每天只有一次機會，皆消耗體力。</p>
             </>
           )}
         </div>
@@ -2674,26 +2700,19 @@ const TowerGame = () => {
       return;
     }
     const off = rollDiscount(svc, traffic);
-    setBossOffer({ svc, off, traffic });
+    setBossOffer({ svc, mode:'discount', off, traffic });
     addLog('🧔 ' + pick(SCENE_TEXTS.shopBossOffer).replace(/{BOSS}/g, SHOPKEEPER_NAME).replace(/{ZHE}/g, formatZhe(off)), 'good');
     actionRef.current = false;
   };
-  // 索取折扣 step 2a：柯妤潔答應老闆開出的折扣 → 完成服務、套用折扣
+  // 索取折扣 step 2a：柯妤潔答應老闆開出的折扣 → 完成服務、套用折扣、扣體力
   const doAcceptDiscount = () => {
     if (actionRef.current || !bossOffer) return;
     actionRef.current = true;
     const { svc, off } = bossOffer;
-    // 露胸(flash)：扁平陣列、對方不射精、純揉胸劇情。
-    // 手交(hand)：spill 主文本 + 一律追加 swallowExtra（默認吞精）。口交(oral)：完整 swallow 池。
-    const pool = SCENE_TEXTS.shopForeplay[svc.key] || [];
-    let tpl;
-    if (Array.isArray(pool)) tpl = pick(pool);
-    else if (pool.swallow) tpl = pick(pool.swallow);
-    else { tpl = pick(pool.spill); if (pool.swallowExtra && pool.swallowExtra.length) tpl += pick(pool.swallowExtra); }
+    addLog('💋 ' + bossServiceScene(SCENE_TEXTS.shopForeplay, svc.key), 'story');
     setShopDiscount(d => Math.max(d, off));
-    setPlayer(p=>addMinutes({...p, discountAttemptDay:p.days}, svc.time||15));  // 服務完成用掉今天機會、耗時比照娼院前戲
-    addLog('💋 ' + tpl.replace(/{BOSS}/g, SHOPKEEPER_NAME), 'story');
-    addLog(`💳 結帳折扣已套用：打 ${formatZhe(off)} 折（省 ${Math.round(off*100)}%）。`, 'gold');
+    setPlayer(p=>addMinutes({...p, hp:Math.max(0,p.hp-(svc.hp||0)), discountAttemptDay:p.days}, svc.time||15));  // 用掉今天機會、耗時+耗體力比照娼院前戲
+    addLog(`💳 結帳折扣已套用：打 ${formatZhe(off)} 折（省 ${Math.round(off*100)}%）。　🩸 體力 -${svc.hp||0}`, 'gold');
     setBossOffer(null);
     actionRef.current = false;
   };
@@ -2706,6 +2725,50 @@ const TowerGame = () => {
     setBossOffer(null);
     actionRef.current = false;
   };
+  // ── 提供性服務（收費）：購物籃為空時，與索取折扣同邏輯，差別是老闆「付錢」 ──
+  // step 1：柯妤潔提議 → 老闆判定接受/拒絕（與折扣共用每日機會、被爽夠則無法）
+  const doAskService = (svc) => {
+    if (actionRef.current || bossOffer) return;
+    if (cart.length > 0) { addLog('🛒 購物籃有東西時老闆只談折扣；想單純賺錢請先清空購物籃。','hint'); return; }
+    if (player.bossSatedDay === player.days) { addLog('😏 老闆今天已經被妳伺候到爽夠了，擺擺手沒了興致。','hint'); return; }
+    if (player.discountAttemptDay === player.days) { addLog('🚫 老闆今天已經不想再冒險了，明天再來吧。','hint'); return; }
+    actionRef.current = true;
+    const traffic = getFootTrafficValue(player.timeMinutes) ?? 0;
+    addLog('💋 ' + pick(SCENE_TEXTS.shopAskService).replace(/{BOSS}/g, SHOPKEEPER_NAME).replace(/{SVC}/g, svc.label), 'hint');
+    if (Math.random() >= discountAcceptChance(svc, traffic)) {
+      addLog('🧔 ' + pick(SCENE_TEXTS.shopBossRefuse).replace(/{BOSS}/g, SHOPKEEPER_NAME), 'bad');
+      setPlayer(p=>({...p, discountAttemptDay:p.days}));
+      actionRef.current = false;
+      return;
+    }
+    const pay = rollPay(svc, traffic);
+    setBossOffer({ svc, mode:'pay', pay, traffic });
+    addLog('🧔 ' + pick(SCENE_TEXTS.shopBossPayOffer).replace(/{BOSS}/g, SHOPKEEPER_NAME).replace(/{PAY}/g, String(pay)), 'good');
+    actionRef.current = false;
+  };
+  // step 2a：柯妤潔答應 → 完成服務、老闆付錢、扣體力
+  const doAcceptService = () => {
+    if (actionRef.current || !bossOffer) return;
+    actionRef.current = true;
+    const { svc, pay } = bossOffer;
+    addLog('💋 ' + bossServiceScene(SCENE_TEXTS.shopPayService, svc.key), 'story');
+    setPlayer(p=>addMinutes({...p, hp:Math.max(0,p.hp-(svc.hp||0)), gold:p.gold+pay, discountAttemptDay:p.days}, svc.time||15));
+    addLog(`💰 老闆 ${SHOPKEEPER_NAME} 付給柯妤潔 ${pay}G 作為報酬。　🩸 體力 -${svc.hp||0}`, 'gold');
+    setBossOffer(null);
+    actionRef.current = false;
+  };
+  // step 2b：柯妤潔嫌報酬太少，拒絕
+  const doDeclineService = () => {
+    if (actionRef.current || !bossOffer) return;
+    actionRef.current = true;
+    setPlayer(p=>({...p, discountAttemptDay:p.days}));
+    addLog('🙅 ' + pick(SCENE_TEXTS.shopDeclinePay).replace(/{BOSS}/g, SHOPKEEPER_NAME), 'hint');
+    setBossOffer(null);
+    actionRef.current = false;
+  };
+  // 待決 offer 的接受/拒絕：依模式分派到折扣或收費
+  const doAcceptOffer  = () => bossOffer?.mode==='pay' ? doAcceptService() : doAcceptDiscount();
+  const doDeclineOffer = () => bossOffer?.mode==='pay' ? doDeclineService() : doDeclineDiscount();
   // ── 離開商店 / 竊盜 ───────────────────────────────────────────────
   // 統一離店：清空購物籃/折扣/竊盜狀態，回街道
   const leaveShop = () => {
@@ -4033,8 +4096,8 @@ const TowerGame = () => {
   if (gs==='shop') return <ShopPanel player={player} shop={shop} cart={cart} onToggleCart={toggleCart} onCheckout={doCheckout} onBuyCondom={doBuyCondom}
     area={shopArea} setArea={setShopArea} footTraffic={getFootTraffic(player.timeMinutes)}
     discount={shopDiscount} services={SHOP_DISCOUNT_SERVICES}
-    onAskDiscount={doAskDiscount} bossOffer={bossOffer} onAcceptOffer={doAcceptDiscount} onDeclineOffer={doDeclineDiscount}
-    discountLocked={player.discountAttemptDay===player.days}
+    onAskDiscount={doAskDiscount} onAskService={doAskService} bossOffer={bossOffer} onAcceptOffer={doAcceptOffer} onDeclineOffer={doDeclineOffer}
+    discountLocked={player.discountAttemptDay===player.days} bossSated={player.bossSatedDay===player.days}
     onTalkBoss={()=>addLog(player.bossSatedDay===player.days
       ? `老闆 ${SHOPKEEPER_NAME} 一臉滿足地揮揮手：「我已經爽夠啦，妳這小妮子真夠賤的……下次再跟妳好好爽一場吧。」`
       : `老闆 ${SHOPKEEPER_NAME} 瞇眼笑了笑：「妹妹今天想找點什麼？」（互動開發中……）`,'hint')}
