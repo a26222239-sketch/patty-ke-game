@@ -1831,6 +1831,10 @@ const rollPay = (svc, traffic) => {
   const v = center + (Math.random()*2 - 1) * (hi - lo) * 0.20;
   return Math.round(Math.max(lo, Math.min(hi, v)) / 5) * 5;
 };
+// 每次判定通過率（服務拆成四次判定，故比原本的接受率寬鬆）：
+//   人越多越容易被客人撞見而中斷；服務越明顯(acceptPenalty)也越容易中斷。夾在 0.45~0.96。
+const judgePassChance = (svc, traffic) =>
+  Math.max(0.45, Math.min(0.96, 0.92 - ((traffic ?? 0)/100) * 0.25 - (svc.acceptPenalty||0) * 0.7));
 // 老闆服務場景組裝（折扣/收費共用結構）：flash 扁平、hand spill+swallowExtra、oral swallow。
 // 場景文本只含 {BOSS}（無 {V_*}），回傳已替換的字串。
 const bossServiceScene = (poolObj, key) => {
@@ -1845,7 +1849,7 @@ const bossServiceScene = (poolObj, key) => {
 const MEAT_CHARM_FULL = 80;
 const meatCompChance = (charm) => Math.min(1, Math.max(0, charm) / MEAT_CHARM_FULL);
 
-const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, onBack, area, setArea, footTraffic, onTalkBoss, discount=0, services=[], onAskDiscount, onAskService, bossOffer, onAcceptOffer, onDeclineOffer, discountLocked, bossSated, theftPhase, onLeave, onReturnAndLeave, onAttemptTheft, onCancelLeave, onCompensate, onMeatComp, onGotoJail, theftFine=0, meatFailed=false}) => {
+const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, onBack, area, setArea, footTraffic, onTalkBoss, discount=0, services=[], onAskDiscount, onAskService, bossOffer, onAcceptOffer, onDeclineOffer, bossService, onServiceStep, lowStamina, discountLocked, bossSated, theftPhase, onLeave, onReturnAndLeave, onAttemptTheft, onCancelLeave, onCompensate, onMeatComp, onGotoJail, theftFine=0, meatFailed=false}) => {
   const [bossMenu, setBossMenu] = React.useState(false);
   const gold = <span className="text-yellow-300 text-lg font-bold">💰 {player.gold}G</span>;
   const cartTotal = cart.reduce((s,i)=>s+i.price, 0);
@@ -1911,10 +1915,16 @@ const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, o
       {bossMenu && (
         <div className="rounded-lg p-3 border border-pink-900/50 space-y-2" style={{background:'#1c0f16'}}>
           <p className="text-pink-300 text-xs font-bold">{cart.length>0 ? '💋 索取折扣（為老闆服務換折扣）' : '💋 提供性服務（為老闆服務賺錢）'}</p>
-          {bossSated ? (
+          {bossService ? (
+            <div className="space-y-2">
+              <p className="text-pink-100 text-sm">服務進行中：<span className="font-bold">{bossService.svc.label}</span>　第 <span className="text-yellow-300 font-bold">{bossService.step+1}</span>/4 次（每次都可能被客人撞見而中斷，只有四次都成功老闆才會給{bossService.mode==='pay'?'錢':'折扣'}）</p>
+              {lowStamina && <p className="text-red-400 text-[11px]">⚠ 體力過低，繼續可能會撐不住而中途放棄（拿不到{bossService.mode==='pay'?'報酬':'折扣'}）。</p>}
+              <button onClick={onServiceStep} className="w-full py-3 rounded-lg bg-pink-700 hover:bg-pink-600 text-white text-sm font-bold">{bossService.step===0?'開始':'繼續'}{bossService.svc.label}（第 {bossService.step+1}/4 次）</button>
+            </div>
+          ) : bossSated ? (
             <p className="text-slate-500 text-xs">老闆 {SHOPKEEPER_NAME} 今天已經被妳伺候到爽夠了，沒了興致。</p>
           ) : discountLocked ? (
-            <p className="text-slate-500 text-xs">老闆 {SHOPKEEPER_NAME} 今天不肯再冒險了，明天開店後再來吧。</p>
+            <p className="text-slate-500 text-xs">老闆 {SHOPKEEPER_NAME} 今天已經陪妳玩過一回了，明天開店後再來吧。</p>
           ) : bossOffer ? (
             <div className="space-y-2">
               {bossOffer.mode==='pay' ? (
@@ -2254,7 +2264,8 @@ const TowerGame = () => {
   const [shopArea, setShopArea] = useState('lobby');  // 商店內裝子區：lobby(門口)/counter(櫃台)/clothing(服飾區)
   const [cart, setCart] = useState([]);  // 購物籃：服飾區「拿起」的物品，到櫃台結帳才扣款
   const [shopDiscount, setShopDiscount] = useState(0);  // 跟老闆服務換來的結帳折扣(0~1)
-  const [bossOffer, setBossOffer] = useState(null);     // 老闆已接受、待柯妤潔決定的折扣 {svc, off, traffic}
+  const [bossOffer, setBossOffer] = useState(null);     // 老闆已開價/開折扣、待柯妤潔決定 {svc, mode, off|pay, traffic}
+  const [bossService, setBossService] = useState(null); // 服務進行中（四次判定）{svc, mode, off|pay, step(已成功次數0~3)}
   const [theftPhase, setTheftPhase] = useState(null);   // 竊盜流程：null / 'warn'(離開警告) / 'caught'(被逮·賠償選擇)
   const [meatFailed, setMeatFailed] = useState(false);  // 肉償判定失敗（老闆拒絕、堅持賠錢）→ 隱藏肉償鈕
   const [shop,    setShop]    = useState([]);
@@ -2674,6 +2685,7 @@ const TowerGame = () => {
     setCart([]);
     setShopDiscount(0);
     setBossOffer(null);
+    setBossService(null);
     setTheftPhase(null);
     setMeatFailed(false);
     setGs('shop');
@@ -2684,95 +2696,98 @@ const TowerGame = () => {
   const toggleCart = (item) => {
     setCart(c => c.find(x=>x.id===item.id) ? c.filter(x=>x.id!==item.id) : [...c, item]);
   };
-  // 索取折扣 step 1：柯妤潔提議服務，老闆判定接受/拒絕（每天一次機會）
+  // ── 老闆服務（索取折扣／提供性服務）：100% 同意 → 開價 → 接受 → 四次判定 ──
+  // step 1（折扣）：柯妤潔提議，老闆一律同意並開出折扣
   const doAskDiscount = (svc) => {
-    if (actionRef.current || bossOffer) return;
+    if (actionRef.current || bossOffer || bossService) return;
     if (cart.length === 0) { addLog('🛒 購物籃是空的，先拿點東西吧。','hint'); return; }
     if (player.bossSatedDay === player.days) { addLog('😏 老闆今天已經被妳伺候到爽夠了，擺擺手沒了興致。','hint'); return; }
-    if (player.discountAttemptDay === player.days) { addLog('🚫 老闆今天已經不肯再冒險了，明天再來吧。','hint'); return; }
+    if (player.discountAttemptDay === player.days) { addLog('🚫 老闆今天已經陪妳玩過一回了，明天再來吧。','hint'); return; }
     actionRef.current = true;
     const traffic = getFootTrafficValue(player.timeMinutes) ?? 0;
     addLog('💋 ' + pick(SCENE_TEXTS.shopAskDiscount).replace(/{BOSS}/g, SHOPKEEPER_NAME).replace(/{SVC}/g, svc.label), 'hint');
-    if (Math.random() >= discountAcceptChance(svc, traffic)) {
-      addLog('🧔 ' + pick(SCENE_TEXTS.shopBossRefuse).replace(/{BOSS}/g, SHOPKEEPER_NAME), 'bad');
-      setPlayer(p=>({...p, discountAttemptDay:p.days}));   // 拒絕也用掉今天機會
-      actionRef.current = false;
-      return;
-    }
     const off = rollDiscount(svc, traffic);
     setBossOffer({ svc, mode:'discount', off, traffic });
     addLog('🧔 ' + pick(SCENE_TEXTS.shopBossOffer).replace(/{BOSS}/g, SHOPKEEPER_NAME).replace(/{ZHE}/g, formatZhe(off)), 'good');
     actionRef.current = false;
   };
-  // 索取折扣 step 2a：柯妤潔答應老闆開出的折扣 → 完成服務、套用折扣、扣體力
-  const doAcceptDiscount = () => {
-    if (actionRef.current || !bossOffer) return;
-    actionRef.current = true;
-    const { svc, off } = bossOffer;
-    addLog('💋 ' + bossServiceScene(SCENE_TEXTS.shopForeplay, svc.key), 'story');
-    setShopDiscount(d => Math.max(d, off));
-    setPlayer(p=>addMinutes({...p, hp:Math.max(0,p.hp-(svc.hp||0)), discountAttemptDay:p.days}, svc.time||15));  // 用掉今天機會、耗時+耗體力比照娼院前戲
-    addLog(`💳 結帳折扣已套用：打 ${formatZhe(off)} 折（省 ${Math.round(off*100)}%）。　🩸 體力 -${svc.hp||0}`, 'gold');
-    setBossOffer(null);
-    actionRef.current = false;
-  };
-  // 索取折扣 step 2b：柯妤潔嫌不划算，拒絕老闆開出的折扣
-  const doDeclineDiscount = () => {
-    if (actionRef.current || !bossOffer) return;
-    actionRef.current = true;
-    setPlayer(p=>({...p, discountAttemptDay:p.days}));     // 不接受也用掉今天機會
-    addLog('🙅 ' + pick(SCENE_TEXTS.shopDeclineOffer).replace(/{BOSS}/g, SHOPKEEPER_NAME), 'hint');
-    setBossOffer(null);
-    actionRef.current = false;
-  };
-  // ── 提供性服務（收費）：購物籃為空時，與索取折扣同邏輯，差別是老闆「付錢」 ──
-  // step 1：柯妤潔提議 → 老闆判定接受/拒絕（與折扣共用每日機會、被爽夠則無法）
+  // step 1（收費）：購物籃為空時，老闆一律同意並開出報酬
   const doAskService = (svc) => {
-    if (actionRef.current || bossOffer) return;
+    if (actionRef.current || bossOffer || bossService) return;
     if (cart.length > 0) { addLog('🛒 購物籃有東西時老闆只談折扣；想單純賺錢請先清空購物籃。','hint'); return; }
     if (player.bossSatedDay === player.days) { addLog('😏 老闆今天已經被妳伺候到爽夠了，擺擺手沒了興致。','hint'); return; }
-    if (player.discountAttemptDay === player.days) { addLog('🚫 老闆今天已經不想再冒險了，明天再來吧。','hint'); return; }
+    if (player.discountAttemptDay === player.days) { addLog('🚫 老闆今天已經陪妳玩過一回了，明天再來吧。','hint'); return; }
     actionRef.current = true;
     const traffic = getFootTrafficValue(player.timeMinutes) ?? 0;
     addLog('💋 ' + pick(SCENE_TEXTS.shopAskService).replace(/{BOSS}/g, SHOPKEEPER_NAME).replace(/{SVC}/g, svc.label), 'hint');
-    if (Math.random() >= discountAcceptChance(svc, traffic)) {
-      addLog('🧔 ' + pick(SCENE_TEXTS.shopBossRefuse).replace(/{BOSS}/g, SHOPKEEPER_NAME), 'bad');
-      setPlayer(p=>({...p, discountAttemptDay:p.days}));
-      actionRef.current = false;
-      return;
-    }
     const pay = rollPay(svc, traffic);
     setBossOffer({ svc, mode:'pay', pay, traffic });
     addLog('🧔 ' + pick(SCENE_TEXTS.shopBossPayOffer).replace(/{BOSS}/g, SHOPKEEPER_NAME).replace(/{PAY}/g, String(pay)), 'good');
     actionRef.current = false;
   };
-  // step 2a：柯妤潔答應 → 完成服務、老闆付錢、扣體力
-  const doAcceptService = () => {
+  // step 2a：柯妤潔答應老闆開的價/折扣 → 進入服務（四次判定），用掉今日機會
+  const doAcceptOffer = () => {
     if (actionRef.current || !bossOffer) return;
     actionRef.current = true;
-    const { svc, pay } = bossOffer;
-    addLog('💋 ' + bossServiceScene(SCENE_TEXTS.shopPayService, svc.key), 'story');
-    setPlayer(p=>addMinutes({...p, hp:Math.max(0,p.hp-(svc.hp||0)), gold:p.gold+pay, discountAttemptDay:p.days}, svc.time||15));
-    addLog(`💰 老闆 ${SHOPKEEPER_NAME} 付給柯妤潔 ${pay}G 作為報酬。　🩸 體力 -${svc.hp||0}`, 'gold');
-    setBossOffer(null);
-    actionRef.current = false;
-  };
-  // step 2b：柯妤潔嫌報酬太少，拒絕
-  const doDeclineService = () => {
-    if (actionRef.current || !bossOffer) return;
-    actionRef.current = true;
+    setBossService({ ...bossOffer, step:0 });
     setPlayer(p=>({...p, discountAttemptDay:p.days}));
-    addLog('🙅 ' + pick(SCENE_TEXTS.shopDeclinePay).replace(/{BOSS}/g, SHOPKEEPER_NAME), 'hint');
     setBossOffer(null);
     actionRef.current = false;
   };
-  // 待決 offer 的接受/拒絕：依模式分派到折扣或收費
-  const doAcceptOffer  = () => bossOffer?.mode==='pay' ? doAcceptService() : doAcceptDiscount();
-  const doDeclineOffer = () => bossOffer?.mode==='pay' ? doDeclineService() : doDeclineDiscount();
+  // step 2b：柯妤潔嫌不划算/太少 → 拒絕，用掉今日機會
+  const doDeclineOffer = () => {
+    if (actionRef.current || !bossOffer) return;
+    actionRef.current = true;
+    const pool = bossOffer.mode==='pay' ? SCENE_TEXTS.shopDeclinePay : SCENE_TEXTS.shopDeclineOffer;
+    setPlayer(p=>({...p, discountAttemptDay:p.days}));
+    addLog('🙅 ' + pick(pool).replace(/{BOSS}/g, SHOPKEEPER_NAME), 'hint');
+    setBossOffer(null);
+    actionRef.current = false;
+  };
+  // step 3：一次判定（共四次，每次獨立）。成功→繼續/完成給獎；失敗(中斷)或體力不足(喊累)→無獎
+  const doServiceStep = () => {
+    if (actionRef.current || !bossService) return;
+    actionRef.current = true;
+    const bs = bossService, svc = bs.svc;
+    // 體力 <20% → 柯妤潔主動喊累放棄，老闆不爽、不給獎
+    if (player.hp < player.baseHp * 0.2) {
+      addLog('🥵 ' + pick(SCENE_TEXTS.shopServiceTapout[svc.key]).replace(/{BOSS}/g, SHOPKEEPER_NAME), 'bad');
+      addLog(`🧔 老闆 ${SHOPKEEPER_NAME} 沒能盡興，不滿地哼了一聲：「半途而廢，這可不算數。」（${bs.mode==='pay'?'沒有報酬':'沒有折扣'}）`, 'hint');
+      setBossService(null);
+      actionRef.current = false;
+      return;
+    }
+    const traffic = getFootTrafficValue(player.timeMinutes) ?? 0;
+    const pass = Math.random() < judgePassChance(svc, traffic);
+    const stepTime = Math.max(2, Math.round((svc.time||12)/4));
+    setPlayer(p=>addMinutes({...p, hp:Math.max(0, p.hp-(svc.hp||0))}, stepTime));   // 每次判定都扣體力(比照娼院前戲)+耗時
+    if (!pass) {   // 客人走近，被迫中斷
+      addLog('🚶 ' + pick(SCENE_TEXTS.shopServiceInterrupt).replace(/{BOSS}/g, SHOPKEEPER_NAME), 'bad');
+      addLog(`（服務被迫中斷，老闆沒能盡興，這次${bs.mode==='pay'?'沒有報酬':'沒有折扣'}。）`, 'hint');
+      setBossService(null);
+      actionRef.current = false;
+      return;
+    }
+    // 成功：輸出本級文本（越後越激烈）
+    addLog('💋 ' + pick(SCENE_TEXTS.shopService[svc.key][bs.step]).replace(/{BOSS}/g, SHOPKEEPER_NAME), 'story');
+    if (bs.step + 1 >= 4) {   // 第四次成功 → 老闆射精(露胸不射但滿足)、給完整獎勵
+      if (bs.mode === 'pay') {
+        setPlayer(p=>({...p, gold:p.gold+bs.pay}));
+        addLog(`💰 老闆 ${SHOPKEEPER_NAME} 爽到不行，心滿意足地付給柯妤潔 ${bs.pay}G。`, 'gold');
+      } else {
+        setShopDiscount(d => Math.max(d, bs.off));
+        addLog(`💳 老闆 ${SHOPKEEPER_NAME} 爽到不行，給柯妤潔結帳打 ${formatZhe(bs.off)} 折（省 ${Math.round(bs.off*100)}%）。`, 'gold');
+      }
+      setBossService(null);
+    } else {
+      setBossService({ ...bs, step: bs.step + 1 });
+    }
+    actionRef.current = false;
+  };
   // ── 離開商店 / 竊盜 ───────────────────────────────────────────────
   // 統一離店：清空購物籃/折扣/竊盜狀態，回街道
   const leaveShop = () => {
-    setCart([]); setShopDiscount(0); setBossOffer(null); setTheftPhase(null); setMeatFailed(false);
+    setCart([]); setShopDiscount(0); setBossOffer(null); setBossService(null); setTheftPhase(null); setMeatFailed(false);
     setPlayer(p=>({...p, shopSessionOpen:false}));
     setGs('street');
   };
@@ -4097,6 +4112,7 @@ const TowerGame = () => {
     area={shopArea} setArea={setShopArea} footTraffic={getFootTraffic(player.timeMinutes)}
     discount={shopDiscount} services={SHOP_DISCOUNT_SERVICES}
     onAskDiscount={doAskDiscount} onAskService={doAskService} bossOffer={bossOffer} onAcceptOffer={doAcceptOffer} onDeclineOffer={doDeclineOffer}
+    bossService={bossService} onServiceStep={doServiceStep} lowStamina={player.hp < player.baseHp*0.2}
     discountLocked={player.discountAttemptDay===player.days} bossSated={player.bossSatedDay===player.days}
     onTalkBoss={()=>addLog(player.bossSatedDay===player.days
       ? `老闆 ${SHOPKEEPER_NAME} 一臉滿足地揮揮手：「我已經爽夠啦，妳這小妮子真夠賤的……下次再跟妳好好爽一場吧。」`
