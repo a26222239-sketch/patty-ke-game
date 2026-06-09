@@ -436,7 +436,17 @@ const BOSS_KEY = {
 const DATE_KEY = {
   roomChat:'shopDateChat', roomChatOrgasm:'shopDateChatOrgasm',
   roomSeduce:'shopDateSeduce', roomSeduceOrgasm:'shopDateSeduceOrgasm',
+  roomNoCondomVagina:'shopDateNoCondomVagina', roomNoCondomAnal:'shopDateNoCondomAnal',
+  roomContinueNoCondomVagina:'shopDateContinueNoCondomVagina', roomContinueNoCondomAnal:'shopDateContinueNoCondomAnal',
+  roomSexFront:'shopDateSexFront', roomSexBack:'shopDateSexBack',
+  roomSexFrontArousal:'shopDateSexFrontArousal', roomSexBackArousal:'shopDateSexBackArousal',
+  roomFinishFrontNoCondom:'shopDateFinishFront', roomFinishBackNoCondom:'shopDateFinishBack',
+  roomLeaveEndurance:'shopDateLeaveEndurance', roomLeaveSemen:'shopDateLeaveSemen', roomDrained:'shopDateDrained',
+  roomSexDefeated:'shopDateDefeated',
+  // TODO（前戲尚未寫 shopDate 版，暫回退 room*）：roomForeplay/roomForeplayArousal/roomForeplayReject
+  // TODO（戴套流程 shopDate 版未寫，暫回退 room*）：roomAskCondom*/roomAgreeCondom*/roomSkipCondom*/roomFinish*Condom/roomDrinkCondom
 };
+// ⚠ 技術債／待辦：肉償(shopRest*)文本需重新檢討（場景/姿勢一致性等），標記待後續處理。
 const bossPool = (enemy, sceneKey) => {
   const bk = enemy?.isBoss ? BOSS_KEY[sceneKey] : (enemy?.isBossDate ? DATE_KEY[sceneKey] : null);
   return (bk && SCENE_TEXTS[bk]) || SCENE_TEXTS[sceneKey];
