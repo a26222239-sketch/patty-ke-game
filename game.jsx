@@ -444,8 +444,15 @@ const DATE_KEY = {
   roomLeaveEndurance:'shopDateLeaveEndurance', roomLeaveSemen:'shopDateLeaveSemen', roomDrained:'shopDateDrained',
   roomSexDefeated:'shopDateDefeated',
   roomForeplayReject:'shopDateForeplayReject',
+  roomAskCondomVagina:'shopDateAskCondomVagina', roomAskCondomAnal:'shopDateAskCondomAnal',
+  roomRefuseCondomVagina:'shopDateRefuseCondomVagina', roomRefuseCondomAnal:'shopDateRefuseCondomAnal',
+  roomForceAgreeVagina:'shopDateForceAgreeVagina', roomForceAgreeAnal:'shopDateForceAgreeAnal',
+  roomAgreeCondomVagina:'shopDateAgreeCondomVagina', roomAgreeCondomAnal:'shopDateAgreeCondomAnal',
+  roomSkipCondomVagina:'shopDateSkipCondomVagina', roomSkipCondomAnal:'shopDateSkipCondomAnal',
+  roomFinishFrontCondom:'shopDateFinishFrontCondom', roomFinishBackCondom:'shopDateFinishBackCondom',
+  roomDrinkCondom:'shopDateDrinkCondom',
   // 前戲主池 shopDateForeplay/Arousal 由 doForeplay 直接判斷 isBossDate 取用（巢狀，非經此表）
-  // TODO（戴套流程 shopDate 版未寫，暫回退 room*）：roomAskCondom*/roomAgreeCondom*/roomSkipCondom*/roomFinish*Condom/roomDrinkCondom
+  // 清潔口交(roomCleanupSex*) shopDate 版未寫，暫回退 room*
 };
 // ⚠ 技術債／待辦：肉償(shopRest*)文本需重新檢討（場景/姿勢一致性等），標記待後續處理。
 const bossPool = (enemy, sceneKey) => {
@@ -3867,7 +3874,7 @@ const TowerGame = () => {
     }
     // 有套且未決定：進入詢問流程
     setEnemy(e=>({...e, phase:'condomAsk', pendingHole:hole}));
-    const pool = hole==='vagina' ? SCENE_TEXTS.roomAskCondomVagina : SCENE_TEXTS.roomAskCondomAnal;
+    const pool = hole==='vagina' ? bossPool(enemy,'roomAskCondomVagina') : bossPool(enemy,'roomAskCondomAnal');
     addLog(pick(pool).replace(/{E}/g, enemy.name), 'story');
     actionRef.current = false;
 
@@ -3885,10 +3892,10 @@ const TowerGame = () => {
       const refuseChance = enemy.foreplayRejected ? 0.6 : 0.3;
       if (Math.random() < refuseChance) {
         // 對方拒絕戴套
-        const refPool = hole==='vagina' ? SCENE_TEXTS.roomRefuseCondomVagina : SCENE_TEXTS.roomRefuseCondomAnal;
+        const refPool = hole==='vagina' ? bossPool(enemy,'roomRefuseCondomVagina') : bossPool(enemy,'roomRefuseCondomAnal');
         addLog(pick(refPool).replace(/{E}/g, enemy.name), 'bad');
         // 柯妤潔被迫同意
-        const forcePool = hole==='vagina' ? SCENE_TEXTS.roomForceAgreeVagina : SCENE_TEXTS.roomForceAgreeAnal;
+        const forcePool = hole==='vagina' ? bossPool(enemy,'roomForceAgreeVagina') : bossPool(enemy,'roomForceAgreeAnal');
         addLog(pick(forcePool).replace(/{E}/g, enemy.name), 'story');
         if (enemy.foreplayRejected) {
           // 前戲被拒後扔套：condoms-1
@@ -3898,7 +3905,7 @@ const TowerGame = () => {
         setEnemy(e=>({...e, condomEquipped:false, phase:'sex', condomMode:'without'}));
       } else {
         // 對方勉強同意戴套
-        const agreePool = hole==='vagina' ? SCENE_TEXTS.roomAgreeCondomVagina : SCENE_TEXTS.roomAgreeCondomAnal;
+        const agreePool = hole==='vagina' ? bossPool(enemy,'roomAgreeCondomVagina') : bossPool(enemy,'roomAgreeCondomAnal');
         addLog(pick(agreePool).replace(/{E}/g, enemy.name), 'story');
         setPlayer(p=>({...p, condoms:p.condoms-1}));
         // 戴套成功 → condomMode='with'，射精前不再詢問
@@ -3908,11 +3915,11 @@ const TowerGame = () => {
       // 玩家選不戴套
       if (player.condoms > 0) {
         // 有套但選不戴：柯妤潔主動說不用
-        const skipPool = hole==='vagina' ? SCENE_TEXTS.roomSkipCondomVagina : SCENE_TEXTS.roomSkipCondomAnal;
+        const skipPool = hole==='vagina' ? bossPool(enemy,'roomSkipCondomVagina') : bossPool(enemy,'roomSkipCondomAnal');
         addLog(pick(skipPool).replace(/{E}/g, enemy.name), 'story');
       } else {
         // 沒有套：柯妤潔說明沒有套直接來
-        const noCondomPool = hole==='vagina' ? SCENE_TEXTS.roomNoCondomVagina : SCENE_TEXTS.roomNoCondomAnal;
+        const noCondomPool = hole==='vagina' ? bossPool(enemy,'roomNoCondomVagina') : bossPool(enemy,'roomNoCondomAnal');
         addLog(pick(noCondomPool).replace(/{E}/g, enemy.name), 'story');
       }
       // 玩家選不戴套 → 從此無套到底
@@ -3999,7 +4006,7 @@ const TowerGame = () => {
       } else if (Math.random()<0.5) {
         // 有套：柯妤潔偷偷喝掉部分精液（吞精量50%~80%，必定<射精量）
         const drinkVol = Math.ceil(vol * (0.5 + Math.random()*0.3));
-        const drinkText = formatText(pick(SCENE_TEXTS.roomDrinkCondom), enemy.name, drinkVol, bustDesc(), hipsDesc());
+        const drinkText = formatText(pick(bossPool(enemy,'roomDrinkCondom')), enemy.name, drinkVol, bustDesc(), hipsDesc());
         addLog(drinkText, 'sex');
         addLog(`柯妤潔吞下了 ${drinkVol}ml 精液，體力值恢復 ${drinkVol} 點。`, 'good');
         setPlayer(p=>({...p, hp:Math.min(p.baseHp, p.hp+drinkVol)}));
