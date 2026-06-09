@@ -1831,10 +1831,10 @@ const rollPay = (svc, traffic) => {
   const v = center + (Math.random()*2 - 1) * (hi - lo) * 0.20;
   return Math.round(Math.max(lo, Math.min(hi, v)) / 5) * 5;
 };
-// 每次判定通過率（服務拆成四次判定，故比原本的接受率寬鬆）：
-//   人越多越容易被客人撞見而中斷；服務越明顯(acceptPenalty)也越容易中斷。夾在 0.45~0.96。
+// 每次判定通過率（服務拆成四次判定，故調得寬鬆、讓四連可行）：
+//   人越多越容易被客人撞見而中斷；服務越明顯(acceptPenalty)也越容易中斷。夾在 0.6~0.98。
 const judgePassChance = (svc, traffic) =>
-  Math.max(0.45, Math.min(0.96, 0.92 - ((traffic ?? 0)/100) * 0.25 - (svc.acceptPenalty||0) * 0.7));
+  Math.max(0.6, Math.min(0.98, 0.97 - ((traffic ?? 0)/100) * 0.18 - (svc.acceptPenalty||0) * 0.5));
 // 老闆服務場景組裝（折扣/收費共用結構）：flash 扁平、hand spill+swallowExtra、oral swallow。
 // 場景文本只含 {BOSS}（無 {V_*}），回傳已替換的字串。
 const bossServiceScene = (poolObj, key) => {
@@ -2761,9 +2761,22 @@ const TowerGame = () => {
     const pass = Math.random() < judgePassChance(svc, traffic);
     const stepTime = Math.max(2, Math.round((svc.time||12)/4));
     setPlayer(p=>addMinutes({...p, hp:Math.max(0, p.hp-(svc.hp||0))}, stepTime));   // 每次判定都扣體力(比照娼院前戲)+耗時
-    if (!pass) {   // 客人走近，被迫中斷
+    if (!pass) {   // 客人走近被迫中斷（非柯妤潔主動）→ 按已完成進度照比例給獎
       addLog('🚶 ' + pick(SCENE_TEXTS.shopServiceInterrupt).replace(/{BOSS}/g, SHOPKEEPER_NAME), 'bad');
-      addLog(`（服務被迫中斷，老闆沒能盡興，這次${bs.mode==='pay'?'沒有報酬':'沒有折扣'}。）`, 'hint');
+      if (bs.step > 0) {
+        const ratio = bs.step / 4;
+        if (bs.mode === 'pay') {
+          const partial = Math.max(5, Math.round((bs.pay*ratio)/5)*5);
+          setPlayer(p=>({...p, gold:p.gold+partial}));
+          addLog(`💰 雖然中途被打斷，老闆還是按進度付了柯妤潔 ${partial}G（已完成 ${bs.step}/4）。`, 'gold');
+        } else {
+          const partialOff = Math.max(0.05, Math.round(bs.off*ratio*20)/20);
+          setShopDiscount(d=>Math.max(d, partialOff));
+          addLog(`💳 雖然中途被打斷，老闆還是按進度給了打 ${formatZhe(partialOff)} 折（已完成 ${bs.step}/4）。`, 'gold');
+        }
+      } else {
+        addLog('（還沒進入狀況就被打斷，這次沒有任何報酬。）', 'hint');
+      }
       setBossService(null);
       actionRef.current = false;
       return;
