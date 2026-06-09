@@ -1849,7 +1849,7 @@ const bossServiceScene = (poolObj, key) => {
 const MEAT_CHARM_FULL = 80;
 const meatCompChance = (charm) => Math.min(1, Math.max(0, charm) / MEAT_CHARM_FULL);
 
-const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, onBack, area, setArea, footTraffic, onTalkBoss, discount=0, services=[], onAskDiscount, onAskService, bossOffer, onAcceptOffer, onDeclineOffer, bossService, onServiceStep, lowStamina, discountLocked, bossSated, theftPhase, onLeave, onReturnAndLeave, onAttemptTheft, onCancelLeave, onCompensate, onMeatComp, onGotoJail, theftFine=0, meatFailed=false}) => {
+const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, onBack, area, setArea, footTraffic, shopClosed, onTalkBoss, discount=0, services=[], onAskDiscount, onAskService, bossOffer, onAcceptOffer, onDeclineOffer, bossService, onServiceStep, lowStamina, discountLocked, bossSated, theftPhase, onLeave, onReturnAndLeave, onAttemptTheft, onCancelLeave, onCompensate, onMeatComp, onGotoJail, theftFine=0, meatFailed=false}) => {
   const [bossMenu, setBossMenu] = React.useState(false);
   const gold = <span className="text-yellow-300 text-lg font-bold">💰 {player.gold}G</span>;
   const cartTotal = cart.reduce((s,i)=>s+i.price, 0);
@@ -1860,7 +1860,7 @@ const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, o
       <div className="flex justify-between items-center"><h3 className="text-red-300 font-bold">⚠️ 未結帳商品</h3>{gold}</div>
       <div className="bg-red-950/40 rounded-lg p-3 border border-red-800/50 text-sm text-red-200 leading-relaxed">
         購物籃裡還有 <b className="text-red-100">{cart.length}</b> 件商品（共 {cartTotal}G）尚未結帳。<br/>
-        直接帶走將被視為<b className="text-red-100">竊盜</b>——店裡人越多越不容易被發現，但風險自負。
+        直接帶走將被視為<b className="text-red-100">竊盜</b>——{shopClosed?<span className="text-red-100">店已打烊、空無一人，沒有人潮掩護，這麼做一定會被老闆逮到！</span>:'店裡人越多越不容易被發現，但風險自負。'}
       </div>
       <button onClick={onReturnAndLeave} className="w-full py-3 bg-slate-700 hover:bg-slate-600 text-slate-100 rounded-lg font-bold">🛒 放回商品，正常離開</button>
       <button onClick={onAttemptTheft} className="w-full py-3 bg-red-800 hover:bg-red-700 text-white rounded-lg font-bold">🥷 鋌而走險，把東西偷走</button>
@@ -2005,10 +2005,10 @@ const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, o
   return (
     <div className="space-y-3">
       <div className="flex justify-between items-center"><h3 className="text-yellow-300 font-bold">🏪 商店・門口</h3>{gold}</div>
-      <div className="bg-slate-800/40 rounded-lg p-3 border border-amber-900/30 text-center text-sm" style={{color:'#c0a070'}}>店裡此刻{footTraffic||'空無一人'}……</div>
+      <div className="bg-slate-800/40 rounded-lg p-3 border border-amber-900/30 text-center text-sm" style={{color:'#c0a070'}}>{shopClosed?'店已打烊，此刻空無一人……':`店裡此刻${footTraffic||'空無一人'}……`}</div>
       <div className="grid grid-cols-2 gap-2">
-        <button onClick={()=>setArea('clothing')} className="py-3 bg-slate-800 hover:bg-slate-700 text-yellow-200 rounded-lg font-bold">🛍 服飾區</button>
-        <button onClick={()=>setArea('jewelry')} className="py-3 bg-slate-800 hover:bg-slate-700 text-pink-200 rounded-lg font-bold">💍 飾品區</button>
+        <button onClick={()=>!shopClosed&&setArea('clothing')} disabled={shopClosed} className={`py-3 rounded-lg font-bold ${shopClosed?'bg-slate-900 text-slate-700':'bg-slate-800 hover:bg-slate-700 text-yellow-200'}`}>🛍 服飾區{shopClosed?'（已打烊）':''}</button>
+        <button onClick={()=>!shopClosed&&setArea('jewelry')} disabled={shopClosed} className={`py-3 rounded-lg font-bold ${shopClosed?'bg-slate-900 text-slate-700':'bg-slate-800 hover:bg-slate-700 text-pink-200'}`}>💍 飾品區{shopClosed?'（已打烊）':''}</button>
       </div>
       <button onClick={()=>setArea('counter')} className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-amber-200 rounded-lg font-bold">🧾 櫃台{cart.length>0?`（🛒${cart.length}）`:''}</button>
       <button onClick={onLeave} className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg font-bold">🚪 離開（回街道）{cart.length>0?`（🛒${cart.length} 未結帳）`:''}</button>
@@ -2817,9 +2817,11 @@ const TowerGame = () => {
   const doAttemptTheft = () => {
     if (actionRef.current || cart.length === 0) return;
     actionRef.current = true;
+    const closed = getFootTrafficValue(player.timeMinutes) === null;
     const traffic = getFootTrafficValue(player.timeMinutes) ?? 0;
     const chance = Math.min(0.4, traffic/100 * 0.4);
-    if (Math.random() < chance) {
+    // 打烊後店內空無一人，沒人潮掩護 → 必定被逮（成功率 0）
+    if (!closed && Math.random() < chance) {
       const ids = cart.map(i=>i.id);
       const names = cart.map(i=>i.name).join('、');
       setPlayer(p=>{
@@ -2902,6 +2904,14 @@ const TowerGame = () => {
   const doCheckout = () => {
     if (actionRef.current) return;
     if (cart.length === 0) { addLog('🛒 購物籃是空的。','hint'); return; }
+    // 已打烊：收銀機關了，強制取消交易、商品收回，不扣錢
+    if (getFootTrafficValue(player.timeMinutes) === null) {
+      addLog(`🔒 老闆 ${SHOPKEEPER_NAME} 攤手：「不好意思妹妹，到關店時間了，收銀機都關起來囉，這些東西改天再買吧。」`, 'bad');
+      addLog('🛒 未結帳的商品被收回貨架，交易取消（沒有扣款）。', 'hint');
+      setCart([]);
+      setShopDiscount(0);
+      return;
+    }
     const raw = cart.reduce((s,i)=>s+i.price, 0);
     const total = Math.round(raw * (1 - shopDiscount));
     if (player.gold < total) { addLog(`💰 金幣不足，結帳需 ${total}G。`,'bad'); return; }
@@ -4122,7 +4132,7 @@ const TowerGame = () => {
   }
   if (gs==='status') return <StatusPanel player={player} onBack={()=>setGs('explore')} />;
   if (gs==='shop') return <ShopPanel player={player} shop={shop} cart={cart} onToggleCart={toggleCart} onCheckout={doCheckout} onBuyCondom={doBuyCondom}
-    area={shopArea} setArea={setShopArea} footTraffic={getFootTraffic(player.timeMinutes)}
+    area={shopArea} setArea={setShopArea} footTraffic={getFootTraffic(player.timeMinutes)} shopClosed={getFootTrafficValue(player.timeMinutes)===null}
     discount={shopDiscount} services={SHOP_DISCOUNT_SERVICES}
     onAskDiscount={doAskDiscount} onAskService={doAskService} bossOffer={bossOffer} onAcceptOffer={doAcceptOffer} onDeclineOffer={doDeclineOffer}
     bossService={bossService} onServiceStep={doServiceStep} lowStamina={player.hp < player.baseHp*0.2}
