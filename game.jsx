@@ -826,6 +826,15 @@ const INITIAL_PLAYER = {
   // 每次成功使用該部位 / 體位，對應熟練度 +1
   // 熟練度效果：每 1 點提升前戲耐力傷害 0.5%、前戲成功率 0.2%；做愛耐力傷害 0.8%
   prof:{ hand:0, mouth:0, boob:0, butt:0, leg:0, vagina:0, anal:0 },
+  // 個人紀錄（終身累計，永不清除）：
+  //   acts  — 各方式讓客人射精的人次（手交/口交/乳交/臀交/腿交/小穴/肛門）
+  //   semen — 各方式累計榨出的精液量（ml）
+  //   drunk — 累計喝下的精液量（ml，含吞精、舔精、以及從保險套裡吸食）
+  record:{
+    acts:  { hand:0, mouth:0, boob:0, butt:0, leg:0, vagina:0, anal:0 },
+    semen: { hand:0, mouth:0, boob:0, butt:0, leg:0, vagina:0, anal:0 },
+    drunk: 0,
+  },
   // 時間系統：以當天累計分鐘數記錄，每天從 540（早上 9:00）開始
   // 超過 1440 分鐘（隔天同一時刻）時進入次日並扣減
   timeMinutes: 540,
@@ -1693,6 +1702,47 @@ const StatusPanel = ({ player, onBack }) => {
             })
         }
       </div>
+      {/* 個人紀錄（終身累計） */}
+      {(()=>{
+        const rec = player.record || {};
+        const acts = rec.acts || {}, semen = rec.semen || {};
+        const ORDER = ['hand','mouth','boob','butt','leg','vagina','anal'];
+        const rows = ORDER.filter(k => (acts[k]||0) > 0 || (semen[k]||0) > 0);
+        const totalCount = ORDER.reduce((s,k)=>s+(acts[k]||0), 0);
+        const totalSemen = ORDER.reduce((s,k)=>s+(semen[k]||0), 0);
+        return (
+          <div className={S.card}>
+            <p className={S.cardTitle}>📖 柯妤潔的個人紀錄</p>
+            {rows.length===0
+              ? <p className="text-slate-600 text-xs">尚無任何紀錄，去伺候第一個客人吧……</p>
+              : (
+                <>
+                  {rows.map(k=>(
+                    <div key={k} className="flex justify-between items-baseline text-xs mb-0.5">
+                      <span className="text-slate-400">{PART_NAMES[k]||k}</span>
+                      <span className="text-pink-300">
+                        <b className="text-pink-200">{acts[k]||0}</b> 人次
+                        <span className="text-slate-500 mx-1">·</span>
+                        榨出 <b className="text-yellow-300">{semen[k]||0}</b> ml
+                      </span>
+                    </div>
+                  ))}
+                  <div className="mt-1 pt-1 border-t border-slate-700/40 space-y-0.5">
+                    <div className="flex justify-between text-xs text-slate-300">
+                      <span>累計服務</span>
+                      <span><b className="text-pink-200">{totalCount}</b> 人次 · 共榨出 <b className="text-yellow-300">{totalSemen}</b> ml 精液</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-slate-300">
+                      <span>累計喝下精液</span>
+                      <span><b className="text-rose-300">{rec.drunk||0}</b> ml<span className="text-slate-500">（含保險套）</span></span>
+                    </div>
+                  </div>
+                </>
+              )
+            }
+          </div>
+        );
+      })()}
       </div>
     </div>
   );
@@ -1886,6 +1936,17 @@ const bossServiceScene = (poolObj, key) => {
 // 肉償成功率：依魅惑度，越高越高，達 MEAT_CHARM_FULL 即 100%
 const MEAT_CHARM_FULL = 80;
 const meatCompChance = (charm) => Math.min(1, Math.max(0, charm) / MEAT_CHARM_FULL);
+
+// 個人紀錄累加：回傳更新後的 record（不可變）。
+//   act  — 本次射精的方式（hand/mouth/boob/butt/leg/vagina/anal）→ acts+1、semen+=vol
+//   drunk — 本次喝下的精液量（ml，含保險套吸食）
+const bumpRecord = (rec, { act=null, vol=0, drunk=0 } = {}) => {
+  const r = rec || {};
+  const acts = { ...(r.acts || {}) };
+  const semen = { ...(r.semen || {}) };
+  if (act) { acts[act] = (acts[act] || 0) + 1; semen[act] = (semen[act] || 0) + (vol || 0); }
+  return { acts, semen, drunk: (r.drunk || 0) + (drunk || 0) };
+};
 
 const ShopPanel = ({player, shop, cart, onToggleCart, onCheckout, onBuyCondom, onBack, area, setArea, footTraffic, shopClosed, nearClose, onTalkBoss, discount=0, services=[], onAskDiscount, onAskService, onBossDate, bossOffer, onAcceptOffer, onDeclineOffer, bossService, onServiceStep, lowStamina, discountLocked, bossSated, theftPhase, onLeave, onReturnAndLeave, onAttemptTheft, onCancelLeave, onCompensate, onMeatComp, onGotoJail, theftFine=0, meatFailed=false}) => {
   const [bossMenu, setBossMenu] = React.useState(false);
@@ -3561,6 +3622,7 @@ const TowerGame = () => {
       prof:newProf,
       clothes:newClothes,
       semenStains: didOrgasm&&!didSwallow ? {...(p.semenStains||{}), [stainPart]: ((p.semenStains||{})[stainPart]||0)+vol } : p.semenStains,
+      record: didOrgasm ? bumpRecord(p.record, {act:type, vol, drunk: didSwallow?vol:0}) : p.record,
     }, 15));
     const newChargedServices = !alreadyChargedFP ? [...(enemy.chargedServices||[]), {type, vol, isForeplay:true, location:loc}] : enemy.chargedServices;
     setEnemy(e=>({...e,
@@ -3705,6 +3767,7 @@ const TowerGame = () => {
     setPlayer(p=>addMinutes({...p,
       hp:Math.max(0,p.hp-playerDmg),
       prof:newProf,
+      record: didOrgasm ? bumpRecord(p.record, {act:'mouth', vol}) : p.record,
     },15));
     setEnemy(e=>({...e,
       hp: Math.max(0, e.hp - orgasmEnemyHpCost),
@@ -4009,7 +4072,7 @@ const TowerGame = () => {
         const drinkText = formatText(pick(bossPool(enemy,'roomDrinkCondom')), enemy.name, drinkVol, bustDesc(), hipsDesc());
         addLog(drinkText, 'sex');
         addLog(`柯妤潔吞下了 ${drinkVol}ml 精液，體力值恢復 ${drinkVol} 點。`, 'good');
-        setPlayer(p=>({...p, hp:Math.min(p.baseHp, p.hp+drinkVol)}));
+        setPlayer(p=>({...p, hp:Math.min(p.baseHp, p.hp+drinkVol), record: bumpRecord(p.record, {drunk:drinkVol})}));
       }
       // 升級收費邏輯
       const cs = enemy.chargedServices||[];
@@ -4032,6 +4095,7 @@ const TowerGame = () => {
         isPregnant: getsPregnant ? true : p.isPregnant,
         seedFather: getsPregnant ? (enemy?.name||'') : p.seedFather,
         semenStains:!enemy.condomEquipped?{...(p.semenStains||{}),[stainPart]:((p.semenStains||{})[stainPart]||0)+vol}:p.semenStains,
+        record: bumpRecord(p.record, {act:hole, vol}),
       },15));
       setEnemy(e=>({...e,
         hp:Math.max(0,e.hp-enemyDmg-orgasmEnemyHpCost),
@@ -4152,6 +4216,7 @@ const TowerGame = () => {
         semenStains: {...(p.semenStains||{}), [stainPart]:((p.semenStains||{})[stainPart]||0)+vol},
         isPregnant: getsPregnant ? true : p.isPregnant,
         seedFather: getsPregnant ? (enemy?.name||'') : p.seedFather,
+        record: bumpRecord(p.record, {act:'vagina', vol}),   // 昏倒被無套內射，計入小穴紀錄
       }, minsToMorning),
     }));
     leavingRef.current = false;
@@ -4254,6 +4319,8 @@ const TowerGame = () => {
             className={`w-full text-sm ${BR.ghost}`} style={{...BR.ghostStyle, color:'#a0a8b0', borderColor:'#3a4048', borderBottomColor:'#505860'}}>🚽 公廁</button>
           <button onClick={()=>addLog('🚓 警局開發中……','hint')}
             className={`w-full text-sm ${BR.ghost}`} style={{...BR.ghostStyle, color:'#6c9cd8', borderColor:'#26456e', borderBottomColor:'#386090'}}>🚓 警局</button>
+          <button onClick={()=>addLog('🏥 醫院開發中……','hint')}
+            className={`w-full text-sm ${BR.ghost}`} style={{...BR.ghostStyle, color:'#e88a98', borderColor:'#7a2638', borderBottomColor:'#a03048'}}>🏥 醫院</button>
         </div>
         <div className="text-xs font-bold pl-1 pt-1" style={{color:'#8a6840'}}>行　動</div>
         <button onClick={()=>addLog('🚧 野戰系統開發中，敬請期待……','hint')}
