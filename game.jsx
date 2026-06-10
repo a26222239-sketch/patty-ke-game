@@ -1726,7 +1726,7 @@ const StatusPanel = ({ player, onBack }) => {
                     </p>
                   ))}
                   <p className="text-xs text-slate-300 pt-1 border-t border-slate-700/40">
-                    喝過 {b(rec.drunkCount||0,'text-rose-300')} 人的精液，共喝下 {b(rec.drunk||0,'text-rose-300')} ml 精液<span className="text-slate-500">（含保險套）</span>
+                    喝過 {b(rec.drunkCount||0,'text-rose-300')} 人的精液，共喝下 {b(rec.drunk||0,'text-rose-300')} ml 精液
                   </p>
                   <p className="text-xs text-slate-300">
                     懷孕過 {b(rec.pregnant||0,'text-pink-300')} 次，墮胎過 {b(rec.abort||0,'text-pink-300')} 次
