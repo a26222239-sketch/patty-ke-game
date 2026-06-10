@@ -2750,7 +2750,7 @@ const TowerGame = () => {
   const doAskDiscount = (svc) => {
     if (actionRef.current || bossOffer || bossService) return;
     if (cart.length === 0) { addLog('🛒 購物籃是空的，先拿點東西吧。','hint'); return; }
-    if ((Math.floor(player.timeMinutes/60)%24) >= 20) { addLog(`🕗 老闆 ${SHOPKEEPER_NAME} 看了眼時鐘：「快關店了，這會兒時間不夠玩，改天早點來吧。」`,'hint'); return; }
+    if (getFootTrafficValue(player.timeMinutes)===null || (Math.floor(player.timeMinutes/60)%24) >= 20) { addLog(`🕗 老闆 ${SHOPKEEPER_NAME} 看了眼時鐘：「快關店了，這會兒時間不夠玩，改天早點來吧。」`,'hint'); return; }
     if (player.bossSatedDay === player.days) { addLog('😏 老闆今天已經被妳伺候到爽夠了，擺擺手沒了興致。','hint'); return; }
     if (player.discountAttemptDay === player.days) { addLog('🚫 老闆今天已經陪妳玩過一回了，明天再來吧。','hint'); return; }
     actionRef.current = true;
@@ -2765,7 +2765,7 @@ const TowerGame = () => {
   const doAskService = (svc) => {
     if (actionRef.current || bossOffer || bossService) return;
     if (cart.length > 0) { addLog('🛒 購物籃有東西時老闆只談折扣；想單純賺錢請先清空購物籃。','hint'); return; }
-    if ((Math.floor(player.timeMinutes/60)%24) >= 20) { addLog(`🕗 老闆 ${SHOPKEEPER_NAME} 看了眼時鐘：「快關店了，這會兒時間不夠玩，改天早點來吧。」`,'hint'); return; }
+    if (getFootTrafficValue(player.timeMinutes)===null || (Math.floor(player.timeMinutes/60)%24) >= 20) { addLog(`🕗 老闆 ${SHOPKEEPER_NAME} 看了眼時鐘：「快關店了，這會兒時間不夠玩，改天早點來吧。」`,'hint'); return; }
     if (player.bossSatedDay === player.days) { addLog('😏 老闆今天已經被妳伺候到爽夠了，擺擺手沒了興致。','hint'); return; }
     if (player.discountAttemptDay === player.days) { addLog('🚫 老闆今天已經陪妳玩過一回了，明天再來吧。','hint'); return; }
     actionRef.current = true;
@@ -4148,6 +4148,7 @@ const TowerGame = () => {
         ...p,
         hp: recoveredHp,
         clothes: strippedClothes,
+        shopSessionOpen: false,   // 昏倒結算後一律離開商店連續場次（避免營業時段判定殘留）
         semenStains: {...(p.semenStains||{}), [stainPart]:((p.semenStains||{})[stainPart]||0)+vol},
         isPregnant: getsPregnant ? true : p.isPregnant,
         seedFather: getsPregnant ? (enemy?.name||'') : p.seedFather,
