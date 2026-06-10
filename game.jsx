@@ -2884,11 +2884,11 @@ const TowerGame = () => {
         if (bs.mode === 'pay') {
           const partial = Math.max(5, Math.round((bs.pay*ratio)/5)*5);
           setPlayer(p=>({...p, gold:p.gold+partial}));
-          addLog(`💰 雖然中途被打斷，老闆還是按進度付了柯妤潔 ${partial}G，這次做完了 ${bs.step}/4。`, 'gold');
+          addLog(`💰 雖然中途被客人打斷，老闆還是按柯妤潔伺候的程度付了她 ${partial}G。`, 'gold');
         } else {
           const partialOff = Math.max(0.05, Math.round(bs.off*ratio*20)/20);
           setShopDiscount(d=>Math.max(d, partialOff));
-          addLog(`💳 雖然中途被打斷，老闆還是按進度給了打 ${formatZhe(partialOff)} 折，這次做完了 ${bs.step}/4。`, 'gold');
+          addLog(`💳 雖然中途被客人打斷，老闆還是按柯妤潔伺候的程度給了她結帳打 ${formatZhe(partialOff)} 折。`, 'gold');
         }
       } else {
         addLog('還沒進入狀況就被客人打斷，這次什麼也沒拿到。', 'hint');
