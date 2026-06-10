@@ -1309,7 +1309,7 @@ const genEnemy = (player) => {
     preference, mainActPref:sexPref, maxArousal:baseArousal,
     phase:'combat', foreplayCount:0, foreplayRejected:false,
     bathInviteCount:0, bathLocked:false,
-    chargedServices:[], accumulatedFee:0,
+    chargedServices:[], accumulatedFee:0, counted:{},
     undressedDuringForeplay:{},
     bathServiceCount:0, bathedThisVisit:false,
     revealedPreference:false,
@@ -1341,7 +1341,7 @@ const genBoss = (player) => {
     preference, mainActPref:sexPref,
     phase:'combat', foreplayCount:0, foreplayRejected:false,
     bathInviteCount:0, bathLocked:true,                              // 休息區無浴室
-    chargedServices:[], accumulatedFee:0,
+    chargedServices:[], accumulatedFee:0, counted:{},
     undressedDuringForeplay:{},
     bathServiceCount:0, bathedThisVisit:false,
     revealedPreference:false,
@@ -1931,19 +1931,22 @@ const bossServiceScene = (poolObj, key) => {
 const MEAT_CHARM_FULL = 80;
 const meatCompChance = (charm) => Math.min(1, Math.max(0, charm) / MEAT_CHARM_FULL);
 
-// 個人紀錄累加：回傳更新後的 record（不可變）。
-//   act   — 本次射精的方式（hand/mouth/boob/butt/leg/vagina/anal）→ acts+1、semen+=vol
-//   drunk — 本次喝下的精液量（ml，含保險套吸食）；drunk>0 時喝過人數 +1
-//   preg  — 本次新懷孕 +1；abort — 本次墮胎 +1
-const bumpRecord = (rec, { act=null, vol=0, drunk=0, preg=0, abort=0 } = {}) => {
+// 個人紀錄累加：回傳更新後的 record（不可變）。「人數」與「精液量」分開計：
+//   countAct    — 將此方式的「服務人數」+1（僅在「同一客人首次以此方式射精」時傳入）
+//   semenAct/vol— 此方式累加榨出的精液量（每次射精都加，不論是否首次）
+//   drunk       — 本次喝下的精液量（ml，含保險套吸食，每次都加）
+//   drunkPerson — 將「喝過幾人精液」+1（僅在「同一客人首次喝其精」時傳 true）
+//   preg/abort  — 懷孕 / 墮胎次數 +1
+const bumpRecord = (rec, { countAct=null, semenAct=null, vol=0, drunk=0, drunkPerson=false, preg=0, abort=0 } = {}) => {
   const r = rec || {};
   const acts = { ...(r.acts || {}) };
   const semen = { ...(r.semen || {}) };
-  if (act) { acts[act] = (acts[act] || 0) + 1; semen[act] = (semen[act] || 0) + (vol || 0); }
+  if (countAct) acts[countAct] = (acts[countAct] || 0) + 1;
+  if (semenAct) semen[semenAct] = (semen[semenAct] || 0) + (vol || 0);
   return {
     acts, semen,
     drunk: (r.drunk || 0) + (drunk || 0),
-    drunkCount: (r.drunkCount || 0) + (drunk > 0 ? 1 : 0),
+    drunkCount: (r.drunkCount || 0) + (drunkPerson ? 1 : 0),
     pregnant: (r.pregnant || 0) + (preg || 0),
     abort: (r.abort || 0) + (abort || 0),
   };
@@ -3618,12 +3621,15 @@ const TowerGame = () => {
     const swallowHeal = didSwallow ? vol : 0;
     // 射精時客人額外消耗 vol*2 的體力（與服務消耗 enemyDmg 獨立計算）
     const orgasmEnemyHpCost = didOrgasm ? vol * 2 : 0;
+    // 個人紀錄「人數」以客人為單位：同一客人此方式首次射精才 +1 人；喝精同理首次才 +1 人
+    const firstThisType = didOrgasm && !(enemy.counted?.[type]);
+    const firstDrink    = didSwallow && !(enemy.counted?.drink);
     setPlayer(p=>addMinutes({...p,
       hp:Math.min(p.baseHp, Math.max(0,p.hp-playerDmg) + swallowHeal),
       prof:newProf,
       clothes:newClothes,
       semenStains: didOrgasm&&!didSwallow ? {...(p.semenStains||{}), [stainPart]: ((p.semenStains||{})[stainPart]||0)+vol } : p.semenStains,
-      record: didOrgasm ? bumpRecord(p.record, {act:type, vol, drunk: didSwallow?vol:0}) : p.record,
+      record: didOrgasm ? bumpRecord(p.record, {countAct: firstThisType?type:null, semenAct:type, vol, drunk: didSwallow?vol:0, drunkPerson: firstDrink}) : p.record,
     }, 15));
     const newChargedServices = !alreadyChargedFP ? [...(enemy.chargedServices||[]), {type, vol, isForeplay:true, location:loc}] : enemy.chargedServices;
     setEnemy(e=>({...e,
@@ -3636,6 +3642,8 @@ const TowerGame = () => {
       undressedDuringForeplay:savedUndress,
       chargedServices: newChargedServices,
       accumulatedFee:(e.accumulatedFee||0)+(!alreadyChargedFP&&charge>0?charge:0),
+      // 個人紀錄人數去重：標記此客人此方式已計過人數、是否已計過喝精
+      counted: (didOrgasm||didSwallow) ? {...(e.counted||{}), ...(didOrgasm?{[type]:true}:{}), ...(didSwallow?{drink:true}:{})} : e.counted,
       // 體毛喜好系統：命中時設 satisfied
       hairPrefSatisfied: hairHitJustNow ? true : e.hairPrefSatisfied,
     }));
@@ -3765,10 +3773,11 @@ const TowerGame = () => {
     const bathServiceFee = 20;
     // 射精時客人額外消耗 vol*2 的體力（與服務消耗獨立計算）
     const orgasmEnemyHpCost = didOrgasm ? vol * 2 : 0;
+    const firstMouth = didOrgasm && !(enemy.counted?.mouth);   // 同一客人口交首次射精才 +1 人
     setPlayer(p=>addMinutes({...p,
       hp:Math.max(0,p.hp-playerDmg),
       prof:newProf,
-      record: didOrgasm ? bumpRecord(p.record, {act:'mouth', vol}) : p.record,
+      record: didOrgasm ? bumpRecord(p.record, {countAct: firstMouth?'mouth':null, semenAct:'mouth', vol}) : p.record,
     },15));
     setEnemy(e=>({...e,
       hp: Math.max(0, e.hp - orgasmEnemyHpCost),
@@ -3776,6 +3785,7 @@ const TowerGame = () => {
       maxArousal: Math.max(e.maxArousal||0, newArousal),
       semenVolume: didOrgasm ? newVol : e.semenVolume,
       semenDepleted: didOrgasm && newVol<=0 ? true : e.semenDepleted,
+      counted: didOrgasm ? {...(e.counted||{}), mouth:true} : e.counted,
       accumulatedFee: (e.accumulatedFee||0) + bathServiceFee + extraFee,
       bathServiceCount: (e.bathServiceCount||0)+1,
       bathedThisVisit: bathCount>=1,
@@ -4065,6 +4075,7 @@ const TowerGame = () => {
     const sexLoc = isBath?'bath':'room';
     if (didOrgasm) {
       const stainPart = hole==='vagina'?'vagina':'anal';
+      let drankThisAct = false;
       if (!enemy.condomEquipped) {
         addStainLog(stainPart, vol, addLog, player.semenStains);
       } else if (Math.random()<0.5) {
@@ -4073,7 +4084,9 @@ const TowerGame = () => {
         const drinkText = formatText(pick(bossPool(enemy,'roomDrinkCondom')), enemy.name, drinkVol, bustDesc(), hipsDesc());
         addLog(drinkText, 'sex');
         addLog(`柯妤潔吞下了 ${drinkVol}ml 精液，體力值恢復 ${drinkVol} 點。`, 'good');
-        setPlayer(p=>({...p, hp:Math.min(p.baseHp, p.hp+drinkVol), record: bumpRecord(p.record, {drunk:drinkVol})}));
+        const firstDrink = !(enemy.counted?.drink);
+        drankThisAct = true;
+        setPlayer(p=>({...p, hp:Math.min(p.baseHp, p.hp+drinkVol), record: bumpRecord(p.record, {drunk:drinkVol, drunkPerson:firstDrink})}));
       }
       // 升級收費邏輯
       const cs = enemy.chargedServices||[];
@@ -4090,13 +4103,14 @@ const TowerGame = () => {
       const {newProf} = gainProf(player.prof, profKey);
       const getsPregnant = !enemy.condomEquipped && hole==='vagina' && !player.isPregnant && Math.random()<0.3;
       const orgasmEnemyHpCost = vol * 2; // 射精時客人額外消耗的體力（與服務 enemyDmg 獨立）
+      const firstThisHole = !(enemy.counted?.[hole]);   // 同一客人此體位首次射精才 +1 人
       setPlayer(p=>addMinutes({...p,
         hp:Math.max(0,p.hp-playerDmg),
         prof:newProf,
         isPregnant: getsPregnant ? true : p.isPregnant,
         seedFather: getsPregnant ? (enemy?.name||'') : p.seedFather,
         semenStains:!enemy.condomEquipped?{...(p.semenStains||{}),[stainPart]:((p.semenStains||{})[stainPart]||0)+vol}:p.semenStains,
-        record: bumpRecord(p.record, {act:hole, vol, preg: getsPregnant?1:0}),
+        record: bumpRecord(p.record, {countAct: firstThisHole?hole:null, semenAct:hole, vol, preg: getsPregnant?1:0}),
       },15));
       setEnemy(e=>({...e,
         hp:Math.max(0,e.hp-enemyDmg-orgasmEnemyHpCost),
@@ -4105,6 +4119,7 @@ const TowerGame = () => {
         semenVolume:newVol,
         accumulatedFee:(e.accumulatedFee||0)+actualCharge,
         chargedServices:newChargedServices,
+        counted: {...(e.counted||{}), [hole]:true, ...(drankThisAct?{drink:true}:{})},   // 標記此體位/喝精已計人數
         bathLocked:false, // 做愛射精後解鎖沐浴邀請
         phase:'combat', // 射精後回到 combat，讓玩家繼續選擇
         condomEquipped:false, // 射精後套子拆掉
@@ -4217,7 +4232,7 @@ const TowerGame = () => {
         semenStains: {...(p.semenStains||{}), [stainPart]:((p.semenStains||{})[stainPart]||0)+vol},
         isPregnant: getsPregnant ? true : p.isPregnant,
         seedFather: getsPregnant ? (enemy?.name||'') : p.seedFather,
-        record: bumpRecord(p.record, {act:'vagina', vol, preg: getsPregnant?1:0}),   // 昏倒被無套內射，計入小穴紀錄
+        record: bumpRecord(p.record, {countAct:'vagina', semenAct:'vagina', vol, preg: getsPregnant?1:0}),   // 昏倒被無套內射，計入小穴紀錄（客人就此離開，計 1 人）
       }, minsToMorning),
     }));
     leavingRef.current = false;
