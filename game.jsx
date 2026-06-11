@@ -1924,14 +1924,14 @@ const districtMins = (fromD, toD) => {
 
 
 
-// 城鎮小地圖：以手繪城鎮插畫為底圖，把定位大頭針疊在目前所在區
-// （北=機構官府／中=商業摩天樓／東=風月燈紅／西=綠頂住宅／南=棚屋陋巷）。
+// 城鎮小地圖：以城鎮插畫為底圖，把定位大頭針疊在目前所在區
+// （北=機構官府／中=商業中心／東=風月紅燈／西=住宅紅瓦／南=棚屋陋巷）。
 const TOWN_PIN = {
-  north:   { x:52, y:8  },
-  central: { x:43, y:19 },
-  east:    { x:71, y:18 },
-  west:    { x:17, y:23 },
-  south:   { x:44, y:39 },
+  north:   { x:49, y:12 },
+  central: { x:46, y:26 },
+  east:    { x:70, y:27 },
+  west:    { x:18, y:26 },
+  south:   { x:43, y:43 },
 };
 const TownMiniMap = ({ districtId, timeMinutes }) => {
   const hour = Math.floor(((timeMinutes%1440)+1440)%1440 / 60);
