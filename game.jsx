@@ -1921,92 +1921,72 @@ const districtMins = (fromD, toD) => {
   return Math.max(3, Math.round(Math.hypot(b.x-a.x, b.y-a.y) * TRAVEL_K));
 };
 
-// 城鎮小地圖（純定位顯示，不可點；高亮目前所在「區」）。依時間切日/黃昏/夜配色。
-//   投影：x 直接用 0~100；y 壓成 6~66（landscape），py(y)=6+y*0.6。
-const MM_PY = (y) => 6 + y * 0.6;
+// 城鎮小地圖（純定位顯示，不可點；高亮目前所在「區」）。乾淨的五區方塊＋文字標籤，手機可讀。
+//   小地圖專用版位（與 districtMins 的距離座標分開，只為畫面排版好看）。
+const MM_LAYOUT = {
+  north:   { x:50, y:15 },
+  west:    { x:18, y:46 },
+  central: { x:50, y:46 },
+  east:    { x:82, y:46 },
+  south:   { x:50, y:77 },
+};
 const MM_STARS = [
-  {x:14,y:7,r:0.5,o:0.85},{x:31,y:5,r:0.4,o:0.6},{x:48,y:8,r:0.5,o:0.9},{x:63,y:5,r:0.35,o:0.5},
-  {x:22,y:13,r:0.35,o:0.5},{x:70,y:12,r:0.45,o:0.7},{x:40,y:11,r:0.3,o:0.5},{x:9,y:18,r:0.4,o:0.5},
+  {x:14,y:7,r:0.5,o:0.85},{x:31,y:5,r:0.4,o:0.6},{x:66,y:6,r:0.5,o:0.9},{x:8,y:30,r:0.35,o:0.5},
+  {x:73,y:30,r:0.45,o:0.6},{x:6,y:62,r:0.4,o:0.55},{x:94,y:62,r:0.35,o:0.5},{x:50,y:33,r:0.3,o:0.4},
 ];
-const MM_WINDOWS = [[-9,2],[-3,6],[5,3],[9,-2],[1,-4],[-7,-3]];   // 區塊內燈窗相對位置
 const TownMiniMap = ({ districtId, timeMinutes }) => {
   const hour = Math.floor(((timeMinutes%1440)+1440)%1440 / 60);
   const night = hour < 6 || hour >= 19;
   const dusk = !night && (hour < 8 || hour >= 16);
   const here = DISTRICTS[districtId] || DISTRICTS.east;
   const skyTop = night ? '#070a16' : dusk ? '#33223e' : '#16233f';
-  const skyBot = night ? '#121a30' : dusk ? '#6a3a4a' : '#2d4068';
+  const skyBot = night ? '#121a30' : dusk ? '#5e3848' : '#2c3f63';
+  const contentOf = (d) => TOWN_LOCATIONS.filter(l=>l.district===d).map(l=>l.name).join('・');
   return (
     <div className="rounded-xl overflow-hidden border" style={{borderColor: night?'#252b46':'#3c4768'}}>
-      <svg viewBox="0 0 100 70" className="w-full" style={{display:'block'}}>
+      <svg viewBox="0 0 100 90" className="w-full" style={{display:'block'}}>
         <defs>
-          <linearGradient id="mmSky" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor={skyTop}/><stop offset="1" stopColor={skyBot}/>
-          </linearGradient>
-          <radialGradient id="mmGlow" cx="0.5" cy="0.5" r="0.5">
-            <stop offset="0" stopColor="#ffb0d8" stopOpacity="0.55"/>
-            <stop offset="1" stopColor="#ffb0d8" stopOpacity="0"/>
-          </radialGradient>
-          <radialGradient id="mmSun" cx="0.5" cy="0.5" r="0.5">
-            <stop offset="0" stopColor={night?'#eef2ff':'#ffe89a'} stopOpacity="0.9"/>
-            <stop offset="1" stopColor={night?'#eef2ff':'#ffe89a'} stopOpacity="0"/>
-          </radialGradient>
-          <filter id="mmSh" x="-30%" y="-30%" width="160%" height="160%">
-            <feDropShadow dx="0" dy="0.5" stdDeviation="0.5" floodColor="#000" floodOpacity="0.45"/>
-          </filter>
+          <linearGradient id="mmSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={skyTop}/><stop offset="1" stopColor={skyBot}/></linearGradient>
+          <radialGradient id="mmGlow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stopColor="#ffb0d8" stopOpacity="0.5"/><stop offset="1" stopColor="#ffb0d8" stopOpacity="0"/></radialGradient>
+          <radialGradient id="mmSun" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stopColor={night?'#eef2ff':'#ffe89a'} stopOpacity="0.85"/><stop offset="1" stopColor={night?'#eef2ff':'#ffe89a'} stopOpacity="0"/></radialGradient>
+          <filter id="mmSh" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="0.6" stdDeviation="0.7" floodColor="#000" floodOpacity="0.4"/></filter>
         </defs>
-        <rect x="0" y="0" width="100" height="70" fill="url(#mmSky)"/>
+        <rect x="0" y="0" width="100" height="90" fill="url(#mmSky)"/>
         {/* 天體：白天太陽 / 夜晚月亮+星星 */}
-        <circle cx="87" cy="10" r="9" fill="url(#mmSun)"/>
+        <circle cx="89" cy="9" r="10" fill="url(#mmSun)"/>
         {night ? (
           <g>
             {MM_STARS.map((s,i)=><circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#dce6ff" opacity={s.o}/>)}
-            <circle cx="87" cy="10" r="3.6" fill="#eef2ff"/>
-            <circle cx="85.4" cy="9" r="3" fill={skyTop}/>
+            <circle cx="89" cy="9" r="3.4" fill="#eef2ff"/><circle cx="87.4" cy="8" r="2.8" fill={skyTop}/>
           </g>
-        ) : <circle cx="87" cy="10" r="4.4" fill="#ffd86a"/>}
-        {/* 道路：深底 + 淺色虛線中線 */}
-        {DISTRICT_ORDER.filter(d=>d!=='central').map(d=>{
-          const c=DISTRICTS.central,t=DISTRICTS[d];
+        ) : <circle cx="89" cy="9" r="4" fill="#ffd86a"/>}
+        {/* 道路：中區←→各區（深底＋虛線中線） */}
+        {['north','south','west','east'].map(d=>{
+          const c=MM_LAYOUT.central,t=MM_LAYOUT[d];
           return (
             <g key={d}>
-              <line x1={c.x} y1={MM_PY(c.y)} x2={t.x} y2={MM_PY(t.y)} stroke="#2a3350" strokeWidth="3.6" strokeLinecap="round"/>
-              <line x1={c.x} y1={MM_PY(c.y)} x2={t.x} y2={MM_PY(t.y)} stroke="#6a7aa0" strokeWidth="0.5" strokeDasharray="1.6 1.8" opacity="0.55"/>
+              <line x1={c.x} y1={c.y} x2={t.x} y2={t.y} stroke="#2a3350" strokeWidth="4" strokeLinecap="round"/>
+              <line x1={c.x} y1={c.y} x2={t.x} y2={t.y} stroke="#6a7aa0" strokeWidth="0.5" strokeDasharray="2 2.2" opacity="0.5"/>
             </g>
           );
         })}
-        {/* 區塊 */}
+        {/* 五區方塊（名稱＋類型＋區內地點；目前所在區高亮＋脈動光暈） */}
         {DISTRICT_ORDER.map(d=>{
-          const dd = DISTRICTS[d]; const cy = MM_PY(dd.y); const on = districtId===d;
+          const p = MM_LAYOUT[d]; const dd = DISTRICTS[d]; const on = districtId===d;
           return (
             <g key={d}>
               {on && (
-                <ellipse cx={dd.x} cy={cy} rx="21" ry="16" fill="url(#mmGlow)">
-                  <animate attributeName="opacity" values="0.9;0.4;0.9" dur="2.4s" repeatCount="indefinite"/>
+                <ellipse cx={p.x} cy={p.y} rx="20" ry="16" fill="url(#mmGlow)">
+                  <animate attributeName="opacity" values="0.95;0.45;0.95" dur="2.4s" repeatCount="indefinite"/>
                 </ellipse>
               )}
-              <rect x={dd.x-15} y={cy-10} width="30" height="20" rx="4"
-                fill={dd.color} stroke={on?'#f2a8cc':'#4a5575'} strokeWidth={on?'1.5':'0.6'}
-                opacity={on?1:(night?0.72:0.9)} filter="url(#mmSh)"/>
-              <rect x={dd.x-15} y={cy-10} width="30" height="7.5" rx="4" fill="#ffffff" opacity="0.06"/>
-              {night && MM_WINDOWS.map((o,i)=>(
-                <rect key={i} x={dd.x+o[0]} y={cy+o[1]} width="1.2" height="1.2" rx="0.2" fill="#ffd98a" opacity={on?0.95:0.55}/>
-              ))}
-              {/* 區名牌 */}
-              <rect x={dd.x-9.5} y={cy-15.8} width="19" height="5" rx="2.5"
-                fill={on?'#3a2030':'#141b2e'} stroke={on?'#e090b8':'#384258'} strokeWidth="0.5"/>
-              <text x={dd.x} y={cy-12.1} textAnchor="middle" fontSize="3.1" fill={on?'#f6bcda':'#9aa6c8'} fontWeight="bold">{dd.name}</text>
-            </g>
-          );
-        })}
-        {/* 地點：圓角底座 + emoji */}
-        {TOWN_LOCATIONS.map(l=>{
-          const cy = MM_PY(l.y); const inHere = districtId===l.district;
-          return (
-            <g key={l.id} opacity={l.todo?0.4:1}>
-              <rect x={l.x-4.6} y={cy-4.2} width="9.2" height="8.8" rx="2.2"
-                fill={inHere?'#251b2e':'#121826'} stroke={inHere?'#6e4c64':'#323b53'} strokeWidth="0.5" filter="url(#mmSh)"/>
-              <text x={l.x} y={cy+2.4} textAnchor="middle" fontSize="5">{l.icon}</text>
+              <rect x={p.x-15} y={p.y-11} width="30" height="22" rx="5"
+                fill={dd.color} stroke={on?'#f2a8cc':'#4a5575'} strokeWidth={on?'1.6':'0.7'}
+                opacity={on?1:(night?0.78:0.92)} filter="url(#mmSh)"/>
+              <rect x={p.x-15} y={p.y-11} width="30" height="8" rx="5" fill="#ffffff" opacity="0.05"/>
+              <text x={p.x} y={p.y-2.5} textAnchor="middle" fontSize="6.2" fontWeight="bold" fill={on?'#f8c0dc':'#cdd6ee'}>{dd.name}</text>
+              <text x={p.x} y={p.y+2.6} textAnchor="middle" fontSize="3.2" fill={on?'#e0a8c4':'#8a96b8'}>{dd.sub}</text>
+              <text x={p.x} y={p.y+8} textAnchor="middle" fontSize="2.9" fill={on?'#f0b0d0':'#74809e'}>{on?'📍 你在這':contentOf(d)}</text>
             </g>
           );
         })}
