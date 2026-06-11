@@ -419,6 +419,15 @@ import { Heart, ArrowUp, Beaker, ChevronRight, Bed, Baby, HeartHandshake,
          Store, Coins, Shirt, ShieldCheck, User, Scissors, PenTool, Flame } from 'lucide-react';
 import { SCENE_TEXTS, HAIR_PREF_HIT_TEXTS, PREGNANT_WAKE_TEXTS, BODYHAIR_GROW_TEXTS, STAIN_TEXTS, BATH_WASH_TEXTS } from './texts.js';
 import townMapUrl from './townmap.png';   // 城鎮地圖底圖（手繪插畫）
+import keyuPortrait from './keyu_portrait.png';   // 柯妤潔初始立繪（白底已去背為透明）
+// ── 紙娃娃系統備忘（未來做換裝立繪用）──────────────────────────────────
+// keyu_portrait.png = 柯妤潔「初始造型」全身立繪，對應初始服裝（CLOTHING_DB 各部位的 [0] 號）：
+//   上著 top    t1  低胸細肩帶背心（深藍）
+//   內衣 bra    b1  蕾絲半罩杯內衣
+//   下著 bottom bt1 低腰緊身包臀短裙（黑）
+//   內褲 panties p1  蕾絲低腰三角褲
+//   鞋子 shoes  sh1 裸色細跟低跟鞋
+// 髮型：長捲髮（灰棕）。日後紙娃娃＝身體底圖 + 各服裝部位分層圖，依 player.clothes 疊圖。
 // 肉償休息區老闆文本：遵守規則 N（地點+行為），歸在「商店休息區」地點 = shopRest*，
 // 與前台 shop* 區分。下表把娼館池鍵對應到 shopRest* 池；未列入或未填者自動回退娼館文本。
 const BOSS_KEY = {
@@ -1629,28 +1638,24 @@ const StatusPanel = ({ player, onBack }) => {
         <h3 className="text-pink-300 font-bold text-lg">📋 狀態欄</h3>
         <button onClick={onBack} className="text-slate-500 text-sm hover:text-slate-300 border border-slate-700 px-3 py-1 rounded-lg">✕ 返回</button>
       </div>
-      {/* 三圍與懷孕 */}
+      {/* 角色立繪 + 基本資料 */}
       <div className={S.card}>
-        <p className="text-slate-400 text-xs mb-1 font-bold">身體資訊</p>
-        <p className="text-slate-300 text-xs">三圍：{player.bust}cm（{player.cup}罩杯）/ {player.waist}cm / {player.hips}cm</p>
-        <p className="text-xs mt-1">
-          {player.isPregnant
-            ? <span className="text-pink-400">🤰 懷孕中（{stage}，第{player.pregnantDays}天）</span>
-            : <span className="text-slate-500">未懷孕</span>}
-        </p>
-        {/* 體毛狀態 */}
-        <div className="mt-2 pt-2 border-t border-slate-700/40 space-y-0.5">
-          {HAIR_PARTS.map(part => {
-            const lv = player.bodyHair?.[part] ?? 1;
-            const lvName = HAIR_LEVELS[lv];
-            const colorMap = ['text-slate-400','text-slate-300','text-amber-400','text-orange-500'];
-            return (
-              <p key={part} className="text-xs">
-                <span className="text-slate-500">{HAIR_PART_NAMES[part]}：</span>
-                <span className={colorMap[lv]}>{lvName}</span>
-              </p>
-            );
-          })}
+        <div className="flex gap-3">
+          <div className="shrink-0 rounded-lg overflow-hidden border border-pink-900/50"
+            style={{width:104, background:'linear-gradient(#1c2333,#0e1320)'}}>
+            <img src={keyuPortrait} alt="柯妤潔" className="w-full block" style={{height:'auto'}}/>
+          </div>
+          <div className="flex-1 min-w-0 flex flex-col justify-center space-y-1.5">
+            <p className="text-pink-200 font-bold text-lg leading-none">柯妤潔</p>
+            <p className="text-slate-300 text-xs">身高 {player.height}cm ・ 體重 {player.weight}kg</p>
+            <p className="text-slate-300 text-xs">三圍 {player.bust} / {player.waist} / {player.hips}</p>
+            <p className="text-slate-400 text-xs">罩杯 <span className="text-pink-300 font-bold">{player.cup}</span></p>
+            <p className="text-xs pt-0.5">
+              {player.isPregnant
+                ? <span className="text-pink-400">🤰 懷孕中（{stage}・第{player.pregnantDays}天）</span>
+                : <span className="text-slate-500">未懷孕</span>}
+            </p>
+          </div>
         </div>
       </div>
       {/* 服裝區域 */}
@@ -1675,6 +1680,22 @@ const StatusPanel = ({ player, onBack }) => {
             <p className="text-purple-400 text-xs">刺青：{tattoos.map(k=>`${TATTOO_NAMES[k]||k}（${player.tattoos[k].size}）`).join('、')}</p>
           </div>
         )}
+      </div>
+      {/* 體毛狀態 */}
+      <div className={S.card}>
+        <p className={S.cardTitle}>體毛狀態</p>
+        <div className="grid grid-cols-3 gap-1">
+          {HAIR_PARTS.map(part => {
+            const lv = player.bodyHair?.[part] ?? 1;
+            const colorMap = ['text-slate-400','text-slate-300','text-amber-400','text-orange-500'];
+            return (
+              <p key={part} className="text-xs">
+                <span className="text-slate-500">{HAIR_PART_NAMES[part]}</span>
+                <span className={`block ${colorMap[lv]}`}>{HAIR_LEVELS[lv]}</span>
+              </p>
+            );
+          })}
+        </div>
       </div>
       {/* 熟練度 */}
       <div className={S.card}>
