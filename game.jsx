@@ -1893,6 +1893,14 @@ const DISTRICTS = {
   west:    { name:'西區', sub:'住宅', color:'#22301f', x:16, y:50 },
 };
 const DISTRICT_ORDER = ['central','east','north','south','west'];
+// 區間道路（與小地圖路線一致）：中區是樞紐，外區只連到中區 → 外區之間須經中區轉。
+const DISTRICT_ADJ = {
+  central: ['east','north','south','west'],
+  east:  ['central'],
+  north: ['central'],
+  south: ['central'],
+  west:  ['central'],
+};
 const TOWN_LOCATIONS = [
   { id:'brothel',  name:'娼院',   icon:'💋', district:'east',    x:84, y:50, todo:false },
   { id:'shop',     name:'商店',   icon:'🏪', district:'central', x:43, y:46, todo:false },
@@ -2866,6 +2874,7 @@ const TowerGame = () => {
   // 地圖移動（兩層）：先「跨區」走到目標區（依區中心距離扣時間），到了該區才能點進該區的店。
   const travelDistrict = (toD) => {
     if (toD === player.district) return;
+    if (!(DISTRICT_ADJ[player.district]||[]).includes(toD)) return;  // 只能走到相鄰區（外區須經中區轉）
     const mins = districtMins(player.district, toD);
     const dd = DISTRICTS[toD];
     addLog(`🚶 柯妤潔走到了${dd?.name||toD}（約 ${mins} 分鐘）`, 'hint');
@@ -4431,7 +4440,7 @@ const TowerGame = () => {
       home:   {color:'#b0b8c0', borderColor:'#404853', borderBottomColor:'#586068'},
     };
     const curLocs = TOWN_LOCATIONS.filter(l=>l.district===curD);
-    const otherDs = DISTRICT_ORDER.filter(d=>d!==curD);
+    const otherDs = DISTRICT_ADJ[curD] || [];   // 只列相鄰可直達的區（依路線圖，外區只通中區）
     return (
       <div className="space-y-2">
         <TownMiniMap districtId={curD} timeMinutes={player.timeMinutes} />
