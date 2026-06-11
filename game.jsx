@@ -418,6 +418,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Heart, ArrowUp, Beaker, ChevronRight, Bed, Baby, HeartHandshake,
          Store, Coins, Shirt, ShieldCheck, User, Scissors, PenTool, Flame } from 'lucide-react';
 import { SCENE_TEXTS, HAIR_PREF_HIT_TEXTS, PREGNANT_WAKE_TEXTS, BODYHAIR_GROW_TEXTS, STAIN_TEXTS, BATH_WASH_TEXTS } from './texts.js';
+import townMapUrl from './townmap.png';   // 城鎮地圖底圖（手繪插畫）
 // 肉償休息區老闆文本：遵守規則 N（地點+行為），歸在「商店休息區」地點 = shopRest*，
 // 與前台 shop* 區分。下表把娼館池鍵對應到 shopRest* 池；未列入或未填者自動回退娼館文本。
 const BOSS_KEY = {
@@ -1921,129 +1922,49 @@ const districtMins = (fromD, toD) => {
   return Math.max(3, Math.round(Math.hypot(b.x-a.x, b.y-a.y) * TRAVEL_K));
 };
 
-// 城鎮小地圖：直接畫一座連在一起的小鎮（房子/塔樓/道路/樹），把 📍 定點在目前所在的方位。
-const MM_STARS = [
-  {x:14,y:7,r:0.5,o:0.85},{x:31,y:5,r:0.4,o:0.6},{x:66,y:6,r:0.5,o:0.9},{x:9,y:30,r:0.35,o:0.5},
-  {x:74,y:14,r:0.45,o:0.6},{x:6,y:60,r:0.4,o:0.55},{x:95,y:58,r:0.35,o:0.5},{x:24,y:11,r:0.3,o:0.4},
-];
-// 暗化色（屋頂/陰影用）
-const mmShade = (hex, f) => {
-  const n = parseInt(hex.slice(1), 16);
-  const r = Math.min(255,Math.round(((n>>16)&255)*f)), g = Math.min(255,Math.round(((n>>8)&255)*f)), b = Math.min(255,Math.round((n&255)*f));
-  return '#' + ((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
+
+
+// 城鎮小地圖：以手繪城鎮插畫為底圖，把定位大頭針疊在目前所在區
+// （北=機構官府／中=商業摩天樓／東=風月燈紅／西=綠頂住宅／南=棚屋陋巷）。
+const TOWN_PIN = {
+  north:   { x:52, y:8  },
+  central: { x:43, y:19 },
+  east:    { x:71, y:18 },
+  west:    { x:17, y:23 },
+  south:   { x:44, y:39 },
 };
-// 各區建築群（cx,cy=區中心；items 為相對中心的房子）。畫成一座連續的城鎮，五區分布在東西南北中。
-const TOWN_SCENE = {
-  north:   { cx:50, cy:28, label:'北區', sub:'機構', items:[
-    {dx:-6,dy:0,w:7,h:13,c:'#4a6486',roof:'tower'},{dx:4,dy:2,w:8,h:9,c:'#41597a',roof:'tri'} ]},
-  west:    { cx:19, cy:52, label:'西區', sub:'住宅', items:[
-    {dx:-5,dy:1,w:7,h:7,c:'#5e7848',roof:'tri'},{dx:5,dy:2,w:7,h:8,c:'#536a40',roof:'tri'} ]},
-  central: { cx:50, cy:53, label:'中區', sub:'商業', items:[
-    {dx:-9,dy:2,w:8,h:8,c:'#9a7a42',roof:'tri'},{dx:1,dy:0,w:12,h:13,c:'#b08a4a',roof:'hall'},{dx:11,dy:3,w:7,h:7,c:'#8a6e3a',roof:'tri'} ]},
-  east:    { cx:81, cy:52, label:'東區', sub:'風月', items:[
-    {dx:-4,dy:1,w:7,h:9,c:'#9a4a62',roof:'tri'},{dx:5,dy:3,w:8,h:11,c:'#ac526c',roof:'lantern'} ]},
-  south:   { cx:50, cy:76, label:'南區', sub:'陋巷', items:[
-    {dx:-5,dy:1,w:7,h:7,c:'#6a6450',roof:'tri'},{dx:5,dy:2,w:6,h:9,c:'#5e5848',roof:'tri'} ]},
-};
-const MM_DRAW_ORDER = ['north','west','central','east','south'];   // 由後（上）往前（下）畫，下方房子壓在上方之上
 const TownMiniMap = ({ districtId, timeMinutes }) => {
   const hour = Math.floor(((timeMinutes%1440)+1440)%1440 / 60);
   const night = hour < 6 || hour >= 19;
   const dusk = !night && (hour < 8 || hour >= 16);
   const here = DISTRICTS[districtId] || DISTRICTS.east;
-  const skyTop = night ? '#070a16' : dusk ? '#33223e' : '#16233f';
-  const skyBot = night ? '#141d33' : dusk ? '#5e3848' : '#33507a';
-  const ground = night ? '#1a2620' : '#33442a';
-  // 畫一棟房子（base 為地面中心點）
-  const house = (bx, by, w, h, c, roof, k) => {
-    const rc = mmShade(c, 0.62), lit = night ? '#ffd98a' : mmShade(c, 1.3);
-    const win = (wx) => <rect key={k+'w'+wx} x={wx} y={by-h+1.8} width="1.5" height="1.7" fill={lit} opacity={night?0.95:0.45}/>;
-    return (
-      <g key={k} filter="url(#mmSh)">
-        <rect x={bx-w/2} y={by-h} width={w} height={h} fill={c} stroke={mmShade(c,0.5)} strokeWidth="0.25"/>
-        {roof==='tower' ? (
-          <>
-            <polygon points={`${bx-w/2-0.8},${by-h} ${bx},${by-h-7} ${bx+w/2+0.8},${by-h}`} fill={rc}/>
-            <line x1={bx} y1={by-h-7} x2={bx} y2={by-h-10.5} stroke="#b9c4d6" strokeWidth="0.3"/>
-            <polygon points={`${bx},${by-h-10.5} ${bx+3.4},${by-h-9.6} ${bx},${by-h-8.7}`} fill="#d8607a"/>
-          </>
-        ) : roof==='hall' ? (
-          <>
-            <polygon points={`${bx-w/2-1},${by-h} ${bx},${by-h-5} ${bx+w/2+1},${by-h}`} fill={rc}/>
-            <rect x={bx-w/2} y={by-3.2} width={w} height="1.3" fill="#c2683f"/>
-          </>
-        ) : roof==='lantern' ? (
-          <>
-            <polygon points={`${bx-w/2-0.8},${by-h} ${bx},${by-h-h*0.42} ${bx+w/2+0.8},${by-h}`} fill={rc}/>
-            <circle cx={bx-w/2-1.2} cy={by-h+2.5} r="1.3" fill="#e85a72" opacity={night?1:0.85}/>
-            <circle cx={bx+w/2+1.2} cy={by-h+2.5} r="1.3" fill="#e85a72" opacity={night?1:0.85}/>
-          </>
-        ) : (
-          <polygon points={`${bx-w/2-0.8},${by-h} ${bx},${by-h-h*0.5} ${bx+w/2+0.8},${by-h}`} fill={rc}/>
-        )}
-        <rect x={bx-1} y={by-3} width="2" height="3" fill={mmShade(c,0.4)}/>
-        {win(bx-w/2+1.2)}{win(bx+w/2-2.7)}
-      </g>
-    );
-  };
-  const tree = (x,y,k) => (
-    <g key={k}><rect x={x-0.5} y={y-2} width="1" height="2.4" fill="#5a3e26"/><circle cx={x} cy={y-3.4} r="2.6" fill={night?'#22402a':'#3e6a3a'}/></g>
-  );
+  const p = TOWN_PIN[districtId] || TOWN_PIN.east;
+  const tint = night ? { c:'#0a1430', o:0.52 } : dusk ? { c:'#5a2a2e', o:0.30 } : null;
   return (
     <div className="rounded-xl overflow-hidden border" style={{borderColor: night?'#252b46':'#3c4768'}}>
-      <svg viewBox="0 0 100 92" className="w-full" style={{display:'block'}}>
+      <svg viewBox="0 0 100 54.5" className="w-full" style={{display:'block'}}>
         <defs>
-          <linearGradient id="mmSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={skyTop}/><stop offset="1" stopColor={skyBot}/></linearGradient>
-          <radialGradient id="mmGround" cx="0.5" cy="0.42" r="0.7"><stop offset="0" stopColor={mmShade(ground,1.25)}/><stop offset="1" stopColor={ground}/></radialGradient>
-          <radialGradient id="mmGlow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stopColor="#ffd0e4" stopOpacity="0.75"/><stop offset="1" stopColor="#ffd0e4" stopOpacity="0"/></radialGradient>
-          <radialGradient id="mmSun" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stopColor={night?'#eef2ff':'#ffe89a'} stopOpacity="0.85"/><stop offset="1" stopColor={night?'#eef2ff':'#ffe89a'} stopOpacity="0"/></radialGradient>
           <linearGradient id="mmPin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ff84ac"/><stop offset="1" stopColor="#d2335f"/></linearGradient>
-          <filter id="mmSh" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="0.5" stdDeviation="0.4" floodColor="#000" floodOpacity="0.4"/></filter>
+          <radialGradient id="mmGlow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stopColor="#ffd0e4" stopOpacity="0.85"/><stop offset="1" stopColor="#ffd0e4" stopOpacity="0"/></radialGradient>
+          <radialGradient id="mmVig" cx="0.5" cy="0.46" r="0.72"><stop offset="0.55" stopColor="#000" stopOpacity="0"/><stop offset="1" stopColor="#000" stopOpacity="0.38"/></radialGradient>
+          <filter id="mmSh" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="0.4" stdDeviation="0.35" floodColor="#000" floodOpacity="0.5"/></filter>
         </defs>
-        <rect x="0" y="0" width="100" height="92" fill="url(#mmSky)"/>
-        {/* 天體 */}
-        <circle cx="89" cy="10" r="10" fill="url(#mmSun)"/>
-        {night ? (
-          <g>{MM_STARS.map((s,i)=><circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#dce6ff" opacity={s.o}/>)}
-            <circle cx="89" cy="10" r="3.4" fill="#eef2ff"/><circle cx="87.4" cy="9" r="2.8" fill={skyTop}/></g>
-        ) : <circle cx="89" cy="10" r="4" fill="#ffd86a"/>}
-        {/* 城鎮地面 + 城牆輪廓 */}
-        <rect x="5" y="20" width="90" height="66" rx="16" fill="url(#mmGround)" stroke={night?'#3a4d3a':'#56703f'} strokeWidth="1"/>
-        {/* 主要道路（十字） */}
-        <line x1="50" y1="26" x2="50" y2="78" stroke="#9a8458" strokeWidth="5" strokeLinecap="round" opacity="0.6"/>
-        <line x1="16" y1="52" x2="84" y2="52" stroke="#9a8458" strokeWidth="5" strokeLinecap="round" opacity="0.6"/>
-        <line x1="50" y1="26" x2="50" y2="78" stroke="#d8c690" strokeWidth="0.6" strokeDasharray="2 2.4" opacity="0.7"/>
-        <line x1="16" y1="52" x2="84" y2="52" stroke="#d8c690" strokeWidth="0.6" strokeDasharray="2 2.4" opacity="0.7"/>
-        {/* 點綴樹木 */}
-        {tree(12,30,'t1')}{tree(88,30,'t2')}{tree(11,74,'t3')}{tree(89,74,'t4')}
-        {/* 目前所在區光暈（在房子底下） */}
-        {(()=>{ const sc=TOWN_SCENE[districtId]||TOWN_SCENE.east; return (
-          <ellipse cx={sc.cx} cy={sc.cy+2} rx="17" ry="11" fill="url(#mmGlow)">
-            <animate attributeName="opacity" values="0.95;0.5;0.95" dur="2.4s" repeatCount="indefinite"/>
-          </ellipse>
-        ); })()}
-        {/* 五區建築群 */}
-        {MM_DRAW_ORDER.map(d=>{
-          const sc = TOWN_SCENE[d]; const on = districtId===d;
-          return (
-            <g key={d} opacity={on?1:0.82}>
-              {sc.items.map((it,i)=>house(sc.cx+it.dx, sc.cy+it.dy, it.w, it.h, it.c, it.roof, d+i))}
-              <text x={sc.cx} y={sc.cy+9.5} textAnchor="middle" fontSize="3.3" fontWeight="bold"
-                fill={on?'#f6c0da':'#c6cee0'} stroke="#0d1322" strokeWidth="0.35" paintOrder="stroke">{sc.label}</text>
-            </g>
-          );
-        })}
-        {/* 目前所在標記：專業地圖大頭針（尖端指向該區，輕微彈跳） */}
-        {(()=>{ const sc=TOWN_SCENE[districtId]||TOWN_SCENE.east; const px=sc.cx, py=sc.cy-2.5; return (
-          <g transform={`translate(${px} ${py})`}>
-            <animateTransform attributeName="transform" type="translate" additive="sum" values="0 0; 0 -1.6; 0 0" dur="1.7s" repeatCount="indefinite"/>
-            <ellipse cx="0" cy="0.4" rx="2.6" ry="0.9" fill="#000" opacity="0.28"/>
+        <image href={townMapUrl} x="0" y="0" width="100" height="54.5" preserveAspectRatio="xMidYMid slice"/>
+        {tint && <rect x="0" y="0" width="100" height="54.5" fill={tint.c} opacity={tint.o}/>}
+        <rect x="0" y="0" width="100" height="54.5" fill="url(#mmVig)"/>
+        <ellipse cx={p.x} cy={p.y} rx="11" ry="6.5" fill="url(#mmGlow)">
+          <animate attributeName="opacity" values="0.95;0.5;0.95" dur="2.4s" repeatCount="indefinite"/>
+        </ellipse>
+        <g transform={`translate(${p.x} ${p.y})`}>
+          <animateTransform attributeName="transform" type="translate" additive="sum" values="0 0; 0 -1.4; 0 0" dur="1.7s" repeatCount="indefinite"/>
+          <g transform="scale(0.82)">
+            <ellipse cx="0" cy="0.4" rx="2.6" ry="0.9" fill="#000" opacity="0.32"/>
             <path d="M0,0 C-1.5,-2.6 -4.2,-4.3 -4.2,-7.2 A4.2,4.2 0 1 1 4.2,-7.2 C4.2,-4.3 1.5,-2.6 0,0 Z"
               fill="url(#mmPin)" stroke="#8a1f44" strokeWidth="0.5" filter="url(#mmSh)"/>
             <circle cx="0" cy="-7.2" r="1.9" fill="#fff"/>
             <circle cx="0" cy="-7.2" r="0.95" fill="#d2335f"/>
           </g>
-        ); })()}
+        </g>
       </svg>
       <div className="text-center text-[11px] py-1.5 font-bold" style={{color: night?'#c8b0e0':'#d0b090', background:'#13192a'}}>
         📍 柯妤潔現在在【{here.name}・{here.sub}】{night?'　🌙 夜晚':dusk?'　🌆 黃昏':'　☀️ 白天'}
