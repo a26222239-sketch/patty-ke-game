@@ -848,6 +848,7 @@ const INITIAL_PLAYER = {
   shopCondomsLeft: 2,   // 商店每天保險套庫存（每天 9:00 重置為 2）
   shopCondomsDay: 1,    // 上次重置庫存的天數
   shopSessionOpen: false, // 商店連續開啟標記（進商店時 true，離開時 false）
+  loc: 'brothel',         // 目前所在地點（地圖定位用；移動時更新）
   shopProgress: {top:0,bra:0,bottom:0,panties:0,ear:0,navel:0,areola:0,labia:0,socks:0,shoes:0},
   discountAttemptDay: 0,  // 上次索取折扣的天數（== 當前 days 表示今天已用過機會；0=從未）
   bossSatedDay: 0,        // 老闆肉償爽夠的天數（== 當前 days 表示今天老闆已滿足、不再服務）
@@ -1879,6 +1880,86 @@ const getFootTraffic = (timeMinutes) => {
   return FOOT_TRAFFIC_LABELS[v<=20?0 : v<=40?1 : v<=60?2 : v<=80?3 : 4];
 };
 const SHOPKEEPER_NAME = '阿坤';
+
+// ─────────────────────────────────────────────────────────────────────
+// 城鎮地圖（定位用）：分區 + 地點登錄表。座標(0~100)同時用於畫小地圖與算移動時間。
+//   移動時間 = max(3, round(兩點直線距離 × TRAVEL_K))，跨區遠、同區近。
+// ─────────────────────────────────────────────────────────────────────
+const DISTRICTS = {
+  central: { name:'中區', sub:'商業', color:'#3a3320', x:50, y:50 },
+  east:    { name:'東區', sub:'風月', color:'#3a2030', x:84, y:50 },
+  north:   { name:'北區', sub:'機構', color:'#1f2c3a', x:50, y:17 },
+  south:   { name:'南區', sub:'陋巷', color:'#2a2418', x:50, y:83 },
+  west:    { name:'西區', sub:'住宅', color:'#22301f', x:16, y:50 },
+};
+const DISTRICT_ORDER = ['central','east','north','south','west'];
+const TOWN_LOCATIONS = [
+  { id:'brothel',  name:'娼院',   icon:'💋', district:'east',    x:84, y:50, todo:false },
+  { id:'shop',     name:'商店',   icon:'🏪', district:'central', x:43, y:46, todo:false },
+  { id:'tattoo',   name:'刺青店', icon:'🎨', district:'central', x:58, y:55, todo:false },
+  { id:'police',   name:'警局',   icon:'🚓', district:'north',   x:42, y:17, todo:true  },
+  { id:'hospital', name:'醫院',   icon:'🏥', district:'north',   x:59, y:15, todo:true  },
+  { id:'toilet',   name:'公廁',   icon:'🚽', district:'south',   x:43, y:83, todo:true  },
+  { id:'field',    name:'巷弄',   icon:'🌃', district:'south',   x:59, y:85, todo:true  },
+  { id:'home',     name:'家',     icon:'🏠', district:'west',    x:16, y:50, todo:true  },
+];
+const LOC_BY_ID = Object.fromEntries(TOWN_LOCATIONS.map(l=>[l.id, l]));
+const TRAVEL_K = 0.4;   // 距離→分鐘係數（同區約3~6分、跨城約20~26分）
+const travelMins = (fromId, toId) => {
+  const a = LOC_BY_ID[fromId] || LOC_BY_ID.brothel;
+  const b = LOC_BY_ID[toId];
+  if (!a || !b) return 5;
+  return Math.max(3, Math.round(Math.hypot(b.x-a.x, b.y-a.y) * TRAVEL_K));
+};
+
+// 城鎮小地圖（純定位顯示，不可點；📍標出目前所在地）。依時間切換日夜色調。
+//   投影：x 直接用 0~100；y 壓成 6~66（landscape），py(y)=6+y*0.6。
+const MM_PY = (y) => 6 + y * 0.6;
+const TownMiniMap = ({ locId, timeMinutes }) => {
+  const hour = Math.floor(((timeMinutes%1440)+1440)%1440 / 60);
+  const night = hour < 6 || hour >= 19;
+  const here = LOC_BY_ID[locId] || LOC_BY_ID.brothel;
+  const sky = night ? '#0b1020' : '#121a2e';
+  return (
+    <div className="rounded-xl overflow-hidden border" style={{borderColor:'#2a3550', background:sky}}>
+      <svg viewBox="0 0 100 72" className="w-full" style={{display:'block'}}>
+        {/* 連接道路（中區←→各區） */}
+        {DISTRICT_ORDER.filter(d=>d!=='central').map(d=>{
+          const c = DISTRICTS.central, t = DISTRICTS[d];
+          return <line key={d} x1={c.x} y1={MM_PY(c.y)} x2={t.x} y2={MM_PY(t.y)} stroke="#39415e" strokeWidth="2.4" strokeLinecap="round"/>;
+        })}
+        {/* 五區色塊 + 區名 */}
+        {DISTRICT_ORDER.map(d=>{
+          const dd = DISTRICTS[d]; const cy = MM_PY(dd.y); const on = here.district===d;
+          return (
+            <g key={d}>
+              <rect x={dd.x-15} y={cy-10} width="30" height="20" rx="3.5"
+                fill={dd.color} stroke={on?'#e8a0c0':'#454e6e'} strokeWidth={on?'1.3':'0.6'}
+                opacity={night?0.8:0.95}/>
+              <text x={dd.x} y={cy-11.5} textAnchor="middle" fontSize="3.2" fill={on?'#e8a8c8':'#8a96b8'} fontWeight="bold">{dd.name}</text>
+            </g>
+          );
+        })}
+        {/* 地點圖示（📍標目前位置） */}
+        {TOWN_LOCATIONS.map(l=>{
+          const isHere = l.id===locId; const cy = MM_PY(l.y);
+          return (
+            <g key={l.id} opacity={l.todo?0.4:1}>
+              {isHere && <circle cx={l.x} cy={cy} r="5" fill="none" stroke="#f0b0d0" strokeWidth="1"/>}
+              <text x={l.x} y={cy+2} textAnchor="middle" fontSize="5">{l.icon}</text>
+              {isHere && <text x={l.x} y={cy-5.4} textAnchor="middle" fontSize="5.4">📍</text>}
+            </g>
+          );
+        })}
+      </svg>
+      <div className="text-center text-[11px] py-1" style={{color:'#c0a0c0', background:'#161c2e'}}>
+        📍 柯妤潔現在在【{here.name}】・{DISTRICTS[here.district]?.name}{night?'　🌙 夜晚':'　☀️ 白天'}
+      </div>
+    </div>
+  );
+};
+
+
 // ── 索取折扣（為老闆服務換結帳折扣）──────────────────────────────────────
 // 每天只有一次機會：柯妤潔提議 → 老闆判定接受/拒絕 → 接受則開出折扣 → 柯妤潔決定接不接受。
 // 任一終點（老闆拒絕／柯妤潔不接受／服務完成）都用掉當日機會，隔天開店才能再要求。
@@ -2782,6 +2863,20 @@ const TowerGame = () => {
   // ─────────────────────────────────────────────────────────────────
   // 22.5 商店動作 — doOpenShop / doBuyItem / doBuyCondom
   // ─────────────────────────────────────────────────────────────────
+  // 地圖移動：點主畫面按鈕移動。依「目前所在地→目的地」距離扣時間（跨區遠、同區近），再執行該地點的進場 enterFn。
+  const go = (locId, enterFn) => {
+    const dest = LOC_BY_ID[locId];
+    if (!dest) return;
+    if (dest.todo) { addLog(`🚧 ${dest.name}還在規劃中，暫時不能去。`, 'hint'); return; }
+    const mins = (locId === player.loc) ? 0 : travelMins(player.loc, locId);
+    if (mins > 0) {
+      addLog(`🚶 柯妤潔走到了${dest.name}（約 ${mins} 分鐘）`, 'hint');
+      setPlayer(p => ({ ...addMinutes(p, mins), loc: locId }));
+    } else {
+      setPlayer(p => ({ ...p, loc: locId }));
+    }
+    if (enterFn) enterFn();
+  };
   const doOpenShop = () => {
     addSep();
     if (leavingRef.current) return;
@@ -4229,6 +4324,7 @@ const TowerGame = () => {
         hp: recoveredHp,
         clothes: strippedClothes,
         shopSessionOpen: false,   // 昏倒結算後一律離開商店連續場次（避免營業時段判定殘留）
+        loc: 'brothel',           // 昏倒後一律回到娼院（地圖定位重置）
         semenStains: {...(p.semenStains||{}), [stainPart]:((p.semenStains||{})[stainPart]||0)+vol},
         isPregnant: getsPregnant ? true : p.isPregnant,
         seedFather: getsPregnant ? (enemy?.name||'') : p.seedFather,
@@ -4320,28 +4416,61 @@ const TowerGame = () => {
   );
   if (gs==='wardrobe') return <WardrobePanel player={player} onEquip={doEquip} onUnequip={doUnequip} onBack={()=>setGs('explore')}/>;
   if (gs==='piercingShop') return <PiercingShopPanel player={player} tattooDraft={tattooDraft} setTattooDraft={setTattooDraft} onBuyPiercing={doBuyPiercing} onTattoo={doTattoo} onTrimHair={doTrimHair} onBack={()=>setGs('street')}/>;
-  // 街道（外出後）：商店/刺青店在此；尋找路人＝未來野戰系統的入口（地點與尋找路人是兩件事，這裡先放尋找路人佔位）
+  // 街道（外出後）：上方即時小地圖定位，下方依分區排列地點按鈕；點按鈕＝走過去（依距離扣時間）並進入。
   if (gs==='street') {
     const sh = Math.floor(player.timeMinutes/60)%24; const shopOpen = sh>=9 && sh<21;
+    const curLoc = player.loc || 'brothel';
+    // 各地點的進場行為（todo 地點不可進）
+    const ENTER = {
+      brothel: ()=>setGs('explore'),
+      shop:    doOpenShop,
+      tattoo:  ()=>{ setPlayer(p=>addMinutes(p,10)); setGs('piercingShop'); },
+    };
+    const TINT = {
+      brothel:{color:'#e08ab0', borderColor:'#7a2650', borderBottomColor:'#a03070'},
+      shop:   {color:'#e0b060', borderColor:'#7a5020', borderBottomColor:'#a07030'},
+      tattoo: {color:'#c090e0', borderColor:'#6030a0', borderBottomColor:'#8040c0'},
+      police: {color:'#6c9cd8', borderColor:'#26456e', borderBottomColor:'#386090'},
+      hospital:{color:'#e88a98', borderColor:'#7a2638', borderBottomColor:'#a03048'},
+      toilet: {color:'#a0a8b0', borderColor:'#3a4048', borderBottomColor:'#505860'},
+      field:  {color:'#90c878', borderColor:'#3a6020', borderBottomColor:'#508030'},
+      home:   {color:'#b0b8c0', borderColor:'#404853', borderBottomColor:'#586068'},
+    };
     return (
       <div className="space-y-2">
-        <div className="text-center text-sm py-1" style={{color:'#c0a070'}}>🏙 你走在街道上……</div>
-        <div className="text-xs font-bold pl-1" style={{color:'#8a6840'}}>地　點</div>
-        <div className="grid grid-cols-2 gap-2">
-          <button onClick={doOpenShop} className={`${shopOpen ? BR.primary : BR.dis} w-full text-sm`} style={shopOpen ? BR.primaryStyle : BR.disStyle}>{shopOpen?'🏪 商店':'🔒 打烊'}</button>
-          <button onClick={()=>{setPlayer(p=>addMinutes(p,10));setGs('piercingShop');}}
-            className={`w-full text-sm ${BR.ghost}`} style={{...BR.ghostStyle, color:'#c090e0', borderColor:'#6030a0', borderBottomColor:'#8040c0'}}>🎨 刺青店</button>
-          <button onClick={()=>addLog('🚽 公廁（野戰地點）開發中……','hint')}
-            className={`w-full text-sm ${BR.ghost}`} style={{...BR.ghostStyle, color:'#a0a8b0', borderColor:'#3a4048', borderBottomColor:'#505860'}}>🚽 公廁</button>
-          <button onClick={()=>addLog('🚓 警局開發中……','hint')}
-            className={`w-full text-sm ${BR.ghost}`} style={{...BR.ghostStyle, color:'#6c9cd8', borderColor:'#26456e', borderBottomColor:'#386090'}}>🚓 警局</button>
-          <button onClick={()=>addLog('🏥 醫院開發中……','hint')}
-            className={`w-full text-sm ${BR.ghost}`} style={{...BR.ghostStyle, color:'#e88a98', borderColor:'#7a2638', borderBottomColor:'#a03048'}}>🏥 醫院</button>
-        </div>
-        <div className="text-xs font-bold pl-1 pt-1" style={{color:'#8a6840'}}>行　動</div>
-        <button onClick={()=>addLog('🚧 野戰系統開發中，敬請期待……','hint')}
-          className={`w-full ${BR.ghost}`} style={{...BR.ghostStyle, color:'#90c878', borderColor:'#3a6020', borderBottomColor:'#508030'}}>🧍 尋找路人</button>
-        <button onClick={()=>{setPlayer(p=>addMinutes(p,5));setGs('explore');}} className={`w-full ${BR.ghost}`} style={BR.ghostStyle}>🏠 回家</button>
+        <TownMiniMap locId={curLoc} timeMinutes={player.timeMinutes} />
+        {DISTRICT_ORDER.map(dk=>{
+          const locs = TOWN_LOCATIONS.filter(l=>l.district===dk);
+          if (locs.length===0) return null;
+          const dd = DISTRICTS[dk];
+          return (
+            <div key={dk} className="space-y-1">
+              <div className="text-xs font-bold pl-1" style={{color:'#8a6840'}}>{dd.name}・{dd.sub}</div>
+              <div className="grid grid-cols-2 gap-2">
+                {locs.map(l=>{
+                  const here = l.id===curLoc;
+                  const mins = travelMins(curLoc, l.id);
+                  const closedShop = l.id==='shop' && !shopOpen;
+                  const sub = here ? '📍 你在這'
+                    : l.todo ? '🚧 規劃中'
+                    : closedShop ? `🚶 ${mins} 分・已打烊`
+                    : `🚶 ${mins} 分`;
+                  const onClick = here ? ()=>{ const f=ENTER[l.id]; if(f){setPlayer(p=>({...p,loc:l.id}));f();} }
+                    : l.todo ? ()=>addLog(`🚧 ${l.name}還在規劃中，暫時不能去。`,'hint')
+                    : ()=>go(l.id, ENTER[l.id]);
+                  return (
+                    <button key={l.id} onClick={onClick}
+                      className={`w-full text-sm ${l.todo?BR.dis:BR.ghost}`}
+                      style={l.todo?BR.disStyle:{...BR.ghostStyle, ...(TINT[l.id]||{})}}>
+                      {l.icon} {l.name}
+                      <div className="text-[10px] font-normal" style={{color: l.todo?'#5a5a5a':'#9a8868'}}>{sub}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
     );
   }
@@ -4505,8 +4634,8 @@ const TowerGame = () => {
         <button onClick={()=>{setPlayer(p=>({...addMinutes(p,5), bathSavedClothes:{...p.clothes}}));setGs('bathroom');}}
           className={`w-full text-sm ${BR.ghost}`} style={{...BR.ghostStyle, color:'#6cc0d8', borderColor:'#2a5e70', borderBottomColor:'#3a8098'}}>🛁 浴室</button>
         <button onClick={()=>setGs('wardrobe')} className={`w-full text-sm ${BR.ghost}`} style={BR.ghostStyle}>👗 更衣室</button>
-        <button onClick={()=>{setPlayer(p=>addMinutes(p,5));setGs('street');}}
-          className={`w-full text-sm ${BR.ghost}`} style={{...BR.ghostStyle, color:'#e0b060', borderColor:'#7a5020', borderBottomColor:'#a07030'}}>🚶 外出</button>
+        <button onClick={()=>{setPlayer(p=>({...p, loc:'brothel'}));setGs('street');}}
+          className={`w-full text-sm ${BR.ghost}`} style={{...BR.ghostStyle, color:'#e0b060', borderColor:'#7a5020', borderBottomColor:'#a07030'}}>🚶 外出（看地圖）</button>
       </div>
       <div className="text-xs font-bold pl-1 pt-1" style={{color:'#8a6840'}}>系　統</div>
       <button onClick={()=>setGs('saveLoad')} className={`w-full ${BR.ghost}`} style={BR.ghostStyle}>💾 存讀檔</button>
