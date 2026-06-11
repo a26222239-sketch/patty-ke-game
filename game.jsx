@@ -1997,6 +1997,7 @@ const TownMiniMap = ({ districtId, timeMinutes }) => {
           <radialGradient id="mmGround" cx="0.5" cy="0.42" r="0.7"><stop offset="0" stopColor={mmShade(ground,1.25)}/><stop offset="1" stopColor={ground}/></radialGradient>
           <radialGradient id="mmGlow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stopColor="#ffd0e4" stopOpacity="0.75"/><stop offset="1" stopColor="#ffd0e4" stopOpacity="0"/></radialGradient>
           <radialGradient id="mmSun" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stopColor={night?'#eef2ff':'#ffe89a'} stopOpacity="0.85"/><stop offset="1" stopColor={night?'#eef2ff':'#ffe89a'} stopOpacity="0"/></radialGradient>
+          <linearGradient id="mmPin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ff84ac"/><stop offset="1" stopColor="#d2335f"/></linearGradient>
           <filter id="mmSh" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="0.5" stdDeviation="0.4" floodColor="#000" floodOpacity="0.4"/></filter>
         </defs>
         <rect x="0" y="0" width="100" height="92" fill="url(#mmSky)"/>
@@ -2032,12 +2033,15 @@ const TownMiniMap = ({ districtId, timeMinutes }) => {
             </g>
           );
         })}
-        {/* 目前所在 📍（定點在該區上方，輕微上下浮動） */}
-        {(()=>{ const sc=TOWN_SCENE[districtId]||TOWN_SCENE.east; return (
-          <g>
-            <text x={sc.cx} y={sc.cy-16} textAnchor="middle" fontSize="8">📍
-              <animateTransform attributeName="transform" type="translate" values="0 0; 0 -1.6; 0 0" dur="1.6s" repeatCount="indefinite"/>
-            </text>
+        {/* 目前所在標記：專業地圖大頭針（尖端指向該區，輕微彈跳） */}
+        {(()=>{ const sc=TOWN_SCENE[districtId]||TOWN_SCENE.east; const px=sc.cx, py=sc.cy-2.5; return (
+          <g transform={`translate(${px} ${py})`}>
+            <animateTransform attributeName="transform" type="translate" additive="sum" values="0 0; 0 -1.6; 0 0" dur="1.7s" repeatCount="indefinite"/>
+            <ellipse cx="0" cy="0.4" rx="2.6" ry="0.9" fill="#000" opacity="0.28"/>
+            <path d="M0,0 C-1.5,-2.6 -4.2,-4.3 -4.2,-7.2 A4.2,4.2 0 1 1 4.2,-7.2 C4.2,-4.3 1.5,-2.6 0,0 Z"
+              fill="url(#mmPin)" stroke="#8a1f44" strokeWidth="0.5" filter="url(#mmSh)"/>
+            <circle cx="0" cy="-7.2" r="1.9" fill="#fff"/>
+            <circle cx="0" cy="-7.2" r="0.95" fill="#d2335f"/>
           </g>
         ); })()}
       </svg>
