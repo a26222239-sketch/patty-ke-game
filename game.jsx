@@ -419,15 +419,19 @@ import { Heart, ArrowUp, Beaker, ChevronRight, Bed, Baby, HeartHandshake,
          Store, Coins, Shirt, ShieldCheck, User, Scissors, PenTool, Flame } from 'lucide-react';
 import { SCENE_TEXTS, HAIR_PREF_HIT_TEXTS, PREGNANT_WAKE_TEXTS, BODYHAIR_GROW_TEXTS, STAIN_TEXTS, BATH_WASH_TEXTS } from './texts.js';
 import townMapUrl from './townmap.png';   // 城鎮地圖底圖（手繪插畫）
-import keyuPortrait from './keyu_portrait.png';   // 柯妤潔初始立繪（白底已去背為透明）
-// ── 紙娃娃系統備忘（未來做換裝立繪用）──────────────────────────────────
-// keyu_portrait.png = 柯妤潔「初始造型」全身立繪，對應初始服裝（CLOTHING_DB 各部位的 [0] 號）：
-//   上著 top    t1  低胸細肩帶背心（深藍）
-//   內衣 bra    b1  蕾絲半罩杯內衣
-//   下著 bottom bt1 低腰緊身包臀短裙（黑）
-//   內褲 panties p1  蕾絲低腰三角褲
-//   鞋子 shoes  sh1 裸色細跟低跟鞋
-// 髮型：長捲髮（灰棕）。日後紙娃娃＝身體底圖 + 各服裝部位分層圖，依 player.clothes 疊圖。
+import keyuT1 from './keyu_t1.png';   // 立繪・全套第1級（初始造型；白底已去背）
+import keyuT2 from './keyu_t2.png';   // 立繪・全套第2級（去棋盤格背景）
+// ── 紙娃娃（立繪分級）系統 ───────────────────────────────────────────
+// 以「整套同級」對應一張全身立繪：主要服裝(上著/內衣/下著/內褲/襪子/鞋子)全部達第 N 級
+// → 顯示第 N 級立繪（未備齊的高級先沿用最高現有圖）。初始造型(t1/b1/bt1/p1/sk1/sh1)=keyuT1。
+const PORTRAIT_TIERS = { 1: keyuT1, 2: keyuT2 };
+const pickPortrait = (clothes) => {
+  const tierOf = (it) => (it && /(\d+)$/.test(it.id)) ? parseInt(it.id.match(/(\d+)$/)[1], 10) : 0;
+  const main = ['top','bra','bottom','panties','socks','shoes'];
+  const outfitTier = Math.min(...main.map(s => tierOf((clothes||{})[s])));
+  let pt = 1; for (const t of Object.keys(PORTRAIT_TIERS).map(Number).sort((a,b)=>a-b)) if (outfitTier >= t) pt = t;
+  return PORTRAIT_TIERS[pt] || keyuT1;
+};
 // 肉償休息區老闆文本：遵守規則 N（地點+行為），歸在「商店休息區」地點 = shopRest*，
 // 與前台 shop* 區分。下表把娼館池鍵對應到 shopRest* 池；未列入或未填者自動回退娼館文本。
 const BOSS_KEY = {
@@ -765,10 +769,10 @@ const CLOTHING_DB = {
 const INIT_CLOTHES = {
   top:CLOTHING_DB.top[0], bra:CLOTHING_DB.bra[0],
   bottom:CLOTHING_DB.bottom[0], panties:CLOTHING_DB.panties[0],
-  socks:null, shoes:CLOTHING_DB.shoes[0],
+  socks:CLOTHING_DB.socks[0], shoes:CLOTHING_DB.shoes[0],
   ear:null, navel:null, areola:null, labia:null
 };
-const INIT_WARDROBE = ['t1','b1','bt1','p1','sh1'];
+const INIT_WARDROBE = ['t1','b1','bt1','p1','sk1','sh1'];
 
 // ─────────────────────────────────────────────────────────────────────
 // 3.2 罩杯 — CUPS（A~Z 26 個等級）
@@ -1643,7 +1647,7 @@ const StatusPanel = ({ player, onBack }) => {
         <div className="flex gap-3">
           <div className="shrink-0 rounded-lg overflow-hidden border border-pink-900/50"
             style={{width:104, background:'linear-gradient(#1c2333,#0e1320)'}}>
-            <img src={keyuPortrait} alt="柯妤潔" className="w-full block" style={{height:'auto'}}/>
+            <img src={pickPortrait(player.clothes)} alt="柯妤潔" className="w-full block" style={{height:'auto'}}/>
           </div>
           <div className="flex-1 min-w-0 flex flex-col justify-center space-y-1.5">
             <p className="text-pink-200 font-bold text-lg leading-none">柯妤潔</p>
