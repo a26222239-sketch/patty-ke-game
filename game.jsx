@@ -420,20 +420,11 @@ import { Heart, ArrowUp, Beaker, ChevronRight, Bed, Baby, HeartHandshake,
 import { SCENE_TEXTS, HAIR_PREF_HIT_TEXTS, PREGNANT_WAKE_TEXTS, BODYHAIR_GROW_TEXTS, STAIN_TEXTS, BATH_WASH_TEXTS } from './texts.js';
 import townMapUrl from './townmap.png';   // 城鎮地圖底圖（手繪插畫）
 import keyuT1 from './keyu_t1.png';   // 立繪・全套第1級（初始造型；白底已去背）
-import keyuT2 from './keyu_t2.png';   // 立繪・全套第2級（去棋盤格背景）
-import keyuT3 from './keyu_t3.png';   // 立繪・全套第3級（交叉綁帶背心/牛仔熱褲/黑過膝襪/白高跟）
-import keyuT4 from './keyu_t4.png';   // 立繪・全套第4級（半透薄棉露背衣/黑皮短裙/白過膝襪/黑貓跟）
-import keyuT5 from './keyu_t5.png';   // 立繪・全套第5級（蕾絲拼接低胸衫/豹紋內衣/黑百褶短裙/膚色透膚過膝襪/裸色細跟）
-import keyuT6 from './keyu_t6.png';   // 立繪・全套第6級（露背深V綁帶衫/透明薄紗內衣/黑皮革短裙/白蕾絲邊過膝襪/紅漆皮高跟）
-import keyuT7 from './keyu_t7.png';   // 立繪・全套第7級（網紗透視短上衣/蕾絲半罩杯/半透明雪紡短裙/黑色大腿襪/透明方跟穆勒鞋）
-import keyuT8 from './keyu_t8.png';   // 立繪・全套第8級（深開胸皮革背心/皮革束胸/露臀開衩熱褲/透明超薄連褲絲襪/白色蝴蝶結細跟高跟）
-import keyuT9 from './keyu_t9.png';   // 立繪・全套第9級（綁帶超短上衣/交叉綁帶胸衣/網紗透視短裙/後縫線蕾絲大腿襪/透明PVC繫踝高跟）
-import keyuT10 from './keyu_t10.png'; // 立繪・全套第10級（全透明紗質罩衫/透明PVC半罩杯/PVC超短裙/魚網大腿高筒襪/水晶鑲嵌細跟高跟）
-import keyuT11 from './keyu_t11.png'; // 立繪・全套第11級（開胸皮革束帶衣/繞頸細繩胸衣/幾乎全透薄紗裙/蝴蝶結吊帶大腿絲襪/蕾絲綁帶細跟高跟）
+// T2~T12 立繪待重新製作後再逐張接回；目前所有等級暫時沿用 T1
 // ── 紙娃娃（立繪分級）系統 ───────────────────────────────────────────
 // 以「整套同級」對應一張全身立繪：主要服裝(上著/內衣/下著/內褲/襪子/鞋子)全部達第 N 級
 // → 顯示第 N 級立繪（未備齊的高級先沿用最高現有圖）。初始造型(t1/b1/bt1/p1/sk1/sh1)=keyuT1。
-const PORTRAIT_TIERS = { 1: keyuT1, 2: keyuT2, 3: keyuT3, 4: keyuT4, 5: keyuT5, 6: keyuT6, 7: keyuT7, 8: keyuT8, 9: keyuT9, 10: keyuT10, 11: keyuT11 };
+const PORTRAIT_TIERS = { 1: keyuT1 };
 const pickPortrait = (clothes) => {
   const tierOf = (it) => (it && /(\d+)$/.test(it.id)) ? parseInt(it.id.match(/(\d+)$/)[1], 10) : 0;
   const main = ['top','bra','bottom','panties','socks','shoes'];
