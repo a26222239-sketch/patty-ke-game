@@ -1011,6 +1011,13 @@ const formatText = (tpl, eName, vol, bust, hips) => {
     .replace(/{HIPS}/g, hips||'');
 };
 
+// 折扣顯示：off 為「省下的比例」(0.2 = 省 20%)，換算成台式「折」數 = (1-off)×10
+// 例：off 0.2 → 8 折；off 0.15 → 8.5 折；整數不帶小數點。
+const formatZhe = off => {
+  const z = (1 - (off || 0)) * 10;
+  return Number.isInteger(z) ? String(z) : z.toFixed(1);
+};
+
 // ─────────────────────────────────────────────────────────────────────
 // 8.4 存檔工具 — SAVE_SLOTS / readSaveMeta
 // ─────────────────────────────────────────────────────────────────────
@@ -4787,3 +4794,11 @@ const TowerGame = () => {
 };
 
 export default TowerGame;
+
+// ── 純函數具名匯出（供測試用；不影響執行邏輯）─────────────────────────
+// 這些都是無副作用、無 React 依賴的純函數，抽出測試以鎖住現有行為（characterization tests）。
+export {
+  pick, vary, formatTime, getTimePeriod, addMinutes, formatText, formatZhe,
+  getStainLevel, gainProf, getPregnancyStage, getBodyMeasurements,
+  getCurrentCup, calcCharm, getReputation, getReputationTitle, pickPortrait,
+};
