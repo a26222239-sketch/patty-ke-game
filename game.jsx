@@ -420,11 +420,12 @@ import { Heart, ArrowUp, Beaker, ChevronRight, Bed, Baby, HeartHandshake,
 import { SCENE_TEXTS, HAIR_PREF_HIT_TEXTS, PREGNANT_WAKE_TEXTS, BODYHAIR_GROW_TEXTS, STAIN_TEXTS, BATH_WASH_TEXTS } from './texts.js';
 import townMapUrl from './townmap.png';   // 城鎮地圖底圖（手繪插畫）
 import keyuT1 from './keyu_t1.png';   // 立繪・全套第1級（初始造型；白底已去背）
-// T2~T12 立繪待重新製作後再逐張接回；目前所有等級暫時沿用 T1
+import keyuT2 from './keyu_t2.png';   // 立繪・全套第2級（深V吊帶衫/黑深V內衣/超短皮裙/白蕾絲短襪/黑包頭高跟）
+// T3~T12 立繪待重新製作後再逐張接回；未備齊的高級暫時沿用最近的低級圖
 // ── 紙娃娃（立繪分級）系統 ───────────────────────────────────────────
 // 以「整套同級」對應一張全身立繪：主要服裝(上著/內衣/下著/內褲/襪子/鞋子)全部達第 N 級
 // → 顯示第 N 級立繪（未備齊的高級先沿用最高現有圖）。初始造型(t1/b1/bt1/p1/sk1/sh1)=keyuT1。
-const PORTRAIT_TIERS = { 1: keyuT1 };
+const PORTRAIT_TIERS = { 1: keyuT1, 2: keyuT2 };
 const pickPortrait = (clothes) => {
   const tierOf = (it) => (it && /(\d+)$/.test(it.id)) ? parseInt(it.id.match(/(\d+)$/)[1], 10) : 0;
   const main = ['top','bra','bottom','panties','socks','shoes'];
