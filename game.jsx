@@ -1714,57 +1714,52 @@ const StatusPanel = ({ player, onBack }) => {
         <h3 className="text-pink-300 font-bold text-lg">📋 狀態欄</h3>
         <button onClick={onBack} className="text-slate-500 text-sm hover:text-slate-300 border border-slate-700 px-3 py-1 rounded-lg">✕ 返回</button>
       </div>
-      {/* 角色立繪（大圖展示）+ 基本資料 */}
-      <div className="rounded-2xl overflow-hidden border border-pink-900/50 shadow-lg shadow-pink-950/30">
-        {/* 立繪：全身完整呈現、置中、最高 58vh */}
-        <div className="relative flex justify-center" style={{background:'radial-gradient(120% 80% at 50% 0%, #2a1c2e, #0e1320)'}}>
-          <img src={pickPortrait(player.clothes)} alt="柯妤潔" className="block"
-            style={{maxHeight:'58vh', width:'auto', maxWidth:'100%'}}/>
-          {/* 右上角罩杯徽章 */}
-          <div className="absolute top-2 right-2 bg-black/55 backdrop-blur px-2.5 py-1 rounded-full border border-pink-800/50">
-            <span className="text-pink-300 font-bold text-sm">{player.cup} 罩杯</span>
-          </div>
-          {player.isPregnant && (
-            <div className="absolute top-2 left-2 bg-pink-900/70 backdrop-blur px-2.5 py-1 rounded-full border border-pink-600/50">
-              <span className="text-pink-200 text-xs">🤰 {stage}・{player.pregnantDays}天</span>
-            </div>
-          )}
+      {/* 基本資料（上方）*/}
+      <div className={S.card}>
+        <div className="flex items-end justify-between gap-2">
+          <p className="text-pink-200 font-bold text-xl leading-none">柯妤潔</p>
+          <p className="text-slate-400 text-xs">{getReputationTitle(getReputation(player)).title}</p>
         </div>
-        {/* 資訊列 */}
-        <div className="px-4 py-3 bg-gradient-to-b from-slate-900 to-slate-950 border-t border-pink-900/30">
-          <div className="flex items-end justify-between gap-2">
-            <p className="text-pink-200 font-bold text-2xl leading-none">柯妤潔</p>
-            <p className="text-slate-400 text-xs">{getReputationTitle(getReputation(player)).title}</p>
-          </div>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-slate-300">
-            <span>身高 <b className="text-slate-100">{player.height}</b>cm</span>
-            <span>體重 <b className="text-slate-100">{player.weight}</b>kg</span>
-            <span>三圍 <b className="text-slate-100">{player.bust}/{player.waist}/{player.hips}</b></span>
-          </div>
+        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-slate-300">
+          <span>身高 <b className="text-slate-100">{player.height}</b>cm</span>
+          <span>體重 <b className="text-slate-100">{player.weight}</b>kg</span>
+          <span>三圍 <b className="text-slate-100">{player.bust}/{player.waist}/{player.hips}</b></span>
+          <span>罩杯 <b className="text-pink-300">{player.cup}</b></span>
+          {player.isPregnant
+            ? <span className="text-pink-400">🤰 {stage}・第{player.pregnantDays}天</span>
+            : <span className="text-slate-500">未懷孕</span>}
         </div>
       </div>
-      {/* 服裝區域 */}
+      {/* 立繪 ｜ 目前服裝（並排，方便對照衣服↔立繪）*/}
       <div className={S.card}>
-        <p className={S.cardTitle}>目前服裝</p>
-        {clothes.length===0
-          ? <p className="text-slate-600 text-xs">全裸</p>
-          : clothes.map(([slot,item])=>(
-            <p key={slot} className="text-slate-300 text-xs">
-              {CAT_CLOTHES[slot]||slot}：{item.name}
-              <span className="text-slate-500 ml-1">魅惑+{item.charm}</span>
-            </p>
-          ))
-        }
-        {piercings.length>0 && (
-          <div className="mt-2 pt-2 border-t border-slate-700/40">
-            <p className="text-yellow-400 text-xs">{piercings.map(k=>PIERCING_NAMES[k]||k).join('、')}</p>
+        <div className="flex gap-3">
+          <div className="shrink-0 self-start rounded-lg overflow-hidden border border-pink-900/50"
+            style={{width:150, background:'radial-gradient(120% 80% at 50% 0%, #2a1c2e, #0e1320)'}}>
+            <img src={pickPortrait(player.clothes)} alt="柯妤潔" className="w-full block" style={{height:'auto'}}/>
           </div>
-        )}
-        {tattoos.length>0 && (
-          <div className="mt-1">
-            <p className="text-purple-400 text-xs">刺青：{tattoos.map(k=>`${TATTOO_NAMES[k]||k}（${player.tattoos[k].size}）`).join('、')}</p>
+          <div className="flex-1 min-w-0">
+            <p className={S.cardTitle}>目前服裝</p>
+            {clothes.length===0
+              ? <p className="text-slate-600 text-xs">全裸</p>
+              : clothes.map(([slot,item])=>(
+                <p key={slot} className="text-slate-300 text-xs">
+                  {CAT_CLOTHES[slot]||slot}：{item.name}
+                  <span className="text-slate-500 ml-1">魅惑+{item.charm}</span>
+                </p>
+              ))
+            }
+            {piercings.length>0 && (
+              <div className="mt-2 pt-2 border-t border-slate-700/40">
+                <p className="text-yellow-400 text-xs">{piercings.map(k=>PIERCING_NAMES[k]||k).join('、')}</p>
+              </div>
+            )}
+            {tattoos.length>0 && (
+              <div className="mt-1">
+                <p className="text-purple-400 text-xs">刺青：{tattoos.map(k=>`${TATTOO_NAMES[k]||k}（${player.tattoos[k].size}）`).join('、')}</p>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
       {/* 體毛狀態 */}
       <div className={S.card}>
