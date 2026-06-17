@@ -468,8 +468,8 @@ const PORTRAIT_RULES = [
   { img: keyuT3, need: { top: 't3', bra: 'b3', bottom: 'bt3', socks: 'sk3', shoes: 'sh3' } },
   // 深V吊帶+皮裙：胸罩深V露出可見；內褲被遮 → 不檢
   { img: keyuT2, need: { top: 't2', bra: 'b2', bottom: 'bt2', socks: 'sk2', shoes: 'sh2' } },
-  // 黑洋裝：胸罩看不出、內褲被遮 → 不檢
-  { img: keyuT1, need: { top: 't1', bottom: 'bt1', socks: 'sk1', shoes: 'sh1' } },
+  // 黑洋裝：胸罩 b1 有穿（領口蕾絲半罩）；內褲被遮 → 不檢
+  { img: keyuT1, need: { top: 't1', bra: 'b1', bottom: 'bt1', socks: 'sk1', shoes: 'sh1' } },
 ];
 const pickPortrait = (clothes) => {
   const c = clothes || {};
