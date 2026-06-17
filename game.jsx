@@ -448,22 +448,22 @@ const PORTRAIT_RULES = [
   { img: keyuT13, need: { top: 't13', bra: 'b13', bottom: 'bt13', panties: 'p13', socks: 'sk13', shoes: 'sh13' } },
   // 黑紗透視：6 件全可見（內褲透視可見）
   { img: keyuT12, need: { top: 't12', bra: 'b12', bottom: 'bt12', panties: 'p12', socks: 'sk12', shoes: 'sh12' } },
-  // 睡裙：胸口酒紅蕾絲半罩可見(b11)；內褲被遮 → 不檢
-  { img: keyuT11, need: { top: 't11', bra: 'b11', bottom: 'bt11', socks: 'sk11', shoes: 'sh11' } },
-  // 晚禮服：上衣/下著/內褲(側邊細帶可見)/鞋可見；胸罩(隱形胸貼)與襪(裸膚隱形絲襪)皆「看不出」→ 不檢
-  { img: keyuT10, need: { top: 't10', bottom: 'bt10', panties: 'p10', shoes: 'sh10' } },
-  // 旗袍：胸罩看不出、內褲被遮 → 不檢
-  { img: keyuT9, need: { top: 't9', bottom: 'bt9', socks: 'sk9', shoes: 'sh9' } },
+  // 睡裙：胸口酒紅蕾絲半罩(b11)可見；睡裙透視，內褲(p11)可見；6 件可見
+  { img: keyuT11, need: { top: 't11', bra: 'b11', bottom: 'bt11', panties: 'p11', socks: 'sk11', shoes: 'sh11' } },
+  // 晚禮服：上衣/下著/內褲(側邊細帶)/鞋可見；確定沒戴胸罩(裸胸深V)、沒穿襪(裸腿)
+  { img: keyuT10, need: { top: 't10', bottom: 'bt10', panties: 'p10', shoes: 'sh10' }, empty: ['bra', 'socks'] },
+  // 旗袍：確定沒戴胸罩(keyhole 裸膚)；內褲(p9)可見；其餘可見
+  { img: keyuT9, need: { top: 't9', bottom: 'bt9', panties: 'p9', socks: 'sk9', shoes: 'sh9' }, empty: ['bra'] },
   // OL透視：胸罩透出可見；內褲被遮 → 不檢
   { img: keyuT8, need: { top: 't8', bra: 'b8', bottom: 'bt8', socks: 'sk8', shoes: 'sh8' } },
   // 空姐：裙衩處可見膚色絲襪襪頂(sk7)；內褲被遮 → 不檢
   { img: keyuT7, need: { top: 't7', bra: 'b7', bottom: 'bt7', socks: 'sk7', shoes: 'sh7' } },
   // 護士：內褲被遮 → 不檢
   { img: keyuT6, need: { top: 't6', bra: 'b6', bottom: 'bt6', socks: 'sk6', shoes: 'sh6' } },
-  // 黑馬甲豹紋：內褲被遮 → 不檢
-  { img: keyuT5, need: { top: 't5', bra: 'b5', bottom: 'bt5', socks: 'sk5', shoes: 'sh5' } },
-  // 純白蕾絲：內褲被遮 → 不檢
-  { img: keyuT4, need: { top: 't4', bra: 'b4', bottom: 'bt4', socks: 'sk4', shoes: 'sh4' } },
+  // 黑馬甲豹紋：豹紋內褲(p5)明顯可見；6 件可見
+  { img: keyuT5, need: { top: 't5', bra: 'b5', bottom: 'bt5', panties: 'p5', socks: 'sk5', shoes: 'sh5' } },
+  // 純白蕾絲：裙子透視，內褲(p4)可見；6 件可見
+  { img: keyuT4, need: { top: 't4', bra: 'b4', bottom: 'bt4', panties: 'p4', socks: 'sk4', shoes: 'sh4' } },
   // 交叉綁帶背心：深V處薄紗半罩可見(b3)；內褲被遮 → 不檢
   { img: keyuT3, need: { top: 't3', bra: 'b3', bottom: 'bt3', socks: 'sk3', shoes: 'sh3' } },
   // 深V吊帶+皮裙：胸罩深V露出可見；內褲被遮 → 不檢

@@ -154,14 +154,26 @@ describe('立繪挑選 pickPortrait', () => {
     expect(pickPortrait({ bra: { id: 'b14' }, panties: { id: 'p1' } })).not.toBe(bikini);
   });
 
-  it('晚禮服 T10：穿 t10/bt10/p10/sh10 即顯示；胸罩/襪「看不出」故不檢', () => {
+  it('晚禮服 T10：須穿 t10/bt10/p10/sh10 且 胸罩/襪 為空（裸胸裸腿）', () => {
     const t10 = { top: { id: 't10' }, bottom: { id: 'bt10' }, panties: { id: 'p10' }, shoes: { id: 'sh10' } };
     const p10 = pickPortrait(t10);
     expect(p10).not.toBe(pickPortrait({}));
-    // 加任意胸罩/襪仍是 T10（這兩格不檢）
-    expect(pickPortrait({ ...t10, bra: { id: 'b5' }, socks: { id: 'sk5' } })).toBe(p10);
+    // 戴胸罩 → 違反 empty(bra) → 預設
+    expect(pickPortrait({ ...t10, bra: { id: 'b5' } })).toBe(pickPortrait({}));
+    // 穿襪 → 違反 empty(socks) → 預設
+    expect(pickPortrait({ ...t10, socks: { id: 'sk5' } })).toBe(pickPortrait({}));
     // 少鞋 → need 不滿足 → 預設
     expect(pickPortrait({ ...t10, shoes: null })).toBe(pickPortrait({}));
+  });
+
+  it('旗袍 T9：確定沒戴胸罩(empty bra) + 內褲 p9 須穿', () => {
+    const t9 = { top: { id: 't9' }, bottom: { id: 'bt9' }, panties: { id: 'p9' }, socks: { id: 'sk9' }, shoes: { id: 'sh9' } };
+    const p9 = pickPortrait(t9);
+    expect(p9).not.toBe(pickPortrait({}));
+    // 戴胸罩 → 違反 empty → 預設
+    expect(pickPortrait({ ...t9, bra: { id: 'b5' } })).toBe(pickPortrait({}));
+    // 沒穿 p9 → need 不滿足 → 預設
+    expect(pickPortrait({ ...t9, panties: null })).toBe(pickPortrait({}));
   });
 
   it('空姐 T7：裙衩可見膚色絲襪襪頂 → 須穿 sk7', () => {
