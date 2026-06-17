@@ -117,11 +117,28 @@ describe('名聲頭銜', () => {
 });
 
 describe('立繪挑選 pickPortrait', () => {
-  it('目前僅 T1，任何服裝組合都回傳有效圖路徑', () => {
-    const img = pickPortrait({ top: { id: 't1' }, bra: { id: 'b1' }, bottom: { id: 'bt1' } });
-    expect(img).toBeTruthy();
-    // 空服裝也安全 fallback 到 T1，不丟例外
-    expect(pickPortrait({})).toBeTruthy();
+  const fullSet = (n) => ({
+    top: { id: `t${n}` }, bra: { id: `b${n}` }, bottom: { id: `bt${n}` },
+    panties: { id: `p${n}` }, socks: { id: `sk${n}` }, shoes: { id: `sh${n}` },
+  });
+
+  it('不成套（缺件/只穿幾件）一律回通用預設圖，不丟例外', () => {
+    const fallback = pickPortrait({});
+    expect(fallback).toBeTruthy();
+    // 只穿 3 件 → 不成套 → 預設
+    expect(pickPortrait({ top: { id: 't1' }, bra: { id: 'b1' }, bottom: { id: 'bt1' } })).toBe(fallback);
+  });
+
+  it('6 部位全穿且同級才顯示該級立繪；缺一件或混級就回預設', () => {
+    const fallback = pickPortrait({});
+    const p6 = pickPortrait(fullSet(6));
+    expect(p6).toBeTruthy();
+    expect(p6).not.toBe(fallback); // 整套 T6 != 預設
+    expect(pickPortrait(fullSet(3))).not.toBe(p6); // 不同級是不同立繪
+    // 缺鞋子 → 不成套 → 預設
+    expect(pickPortrait({ ...fullSet(6), shoes: null })).toBe(fallback);
+    // 混級（上衣 t3 其餘 t6）→ 不成套 → 預設
+    expect(pickPortrait({ ...fullSet(6), top: { id: 't3' } })).toBe(fallback);
   });
 
   it('比基尼組合：內衣b14+內褲p14 且 其他部位皆空，才顯示比基尼立繪', () => {
