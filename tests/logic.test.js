@@ -123,6 +123,15 @@ describe('立繪挑選 pickPortrait', () => {
     // 空服裝也安全 fallback 到 T1，不丟例外
     expect(pickPortrait({})).toBeTruthy();
   });
+
+  it('比基尼組合：只要穿 b14(內衣)+p14(內褲) 即顯示專屬立繪，不靠整套分級', () => {
+    const bikini = pickPortrait({ bra: { id: 'b14' }, panties: { id: 'p14' } });
+    expect(bikini).toBeTruthy();
+    // 與預設 T1 fallback 不同 → 組合規則確實優先生效
+    expect(bikini).not.toBe(pickPortrait({}));
+    // 即使其他部位穿著低階單品，仍以組合規則為準
+    expect(pickPortrait({ top: { id: 't1' }, bra: { id: 'b14' }, panties: { id: 'p14' } })).toBe(bikini);
+  });
 });
 
 describe('折扣換算 formatZhe（修補先前未定義的崩潰 bug）', () => {
