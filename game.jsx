@@ -430,11 +430,11 @@ import keyuT8 from './keyu_t8.png';   // 立繪・全套第8級（OL透視主題
 import keyuT9 from './keyu_t9.png';   // 立繪・全套第9級（旗袍主題：黑金刺繡旗袍+黑絲綢肚兜/黑透膚大腿襪/黑尖頭高跟）
 import keyuT10 from './keyu_t10.png'; // 立繪・全套第10級（晚禮服主題：祖母綠深V裸背長禮服+雙高衩/裸腿/銀色綁帶高跟）
 import keyuT11 from './keyu_t11.png'; // 立繪・全套第11級（睡裙主題：酒紅絲緞吊帶睡裙+酒紅蕾絲內衣/酒紅吊帶大腿襪/酒紅高跟）
-// T12 立繪待重新製作後再接回；未備齊的高級暫時沿用最近的低級圖
+import keyuT12 from './keyu_t12.png'; // 立繪・全套第12級（黑紗透視主題：交叉綁帶透視短上衣+黑蕾絲內衣/黑紗傘狀短裙/黑蕾絲吊帶大腿襪/黑繞踝魚口涼鞋）
 // ── 紙娃娃（立繪分級）系統 ───────────────────────────────────────────
 // 以「整套同級」對應一張全身立繪：主要服裝(上著/內衣/下著/內褲/襪子/鞋子)全部達第 N 級
 // → 顯示第 N 級立繪（未備齊的高級先沿用最高現有圖）。初始造型(t1/b1/bt1/p1/sk1/sh1)=keyuT1。
-const PORTRAIT_TIERS = { 1: keyuT1, 2: keyuT2, 3: keyuT3, 4: keyuT4, 5: keyuT5, 6: keyuT6, 7: keyuT7, 8: keyuT8, 9: keyuT9, 10: keyuT10, 11: keyuT11 };
+const PORTRAIT_TIERS = { 1: keyuT1, 2: keyuT2, 3: keyuT3, 4: keyuT4, 5: keyuT5, 6: keyuT6, 7: keyuT7, 8: keyuT8, 9: keyuT9, 10: keyuT10, 11: keyuT11, 12: keyuT12 };
 const pickPortrait = (clothes) => {
   const tierOf = (it) => (it && /(\d+)$/.test(it.id)) ? parseInt(it.id.match(/(\d+)$/)[1], 10) : 0;
   const main = ['top','bra','bottom','panties','socks','shoes'];
@@ -646,7 +646,7 @@ const CLOTHING_DB = {
     ['t9', '黑金刺繡旗袍',         84, 4800],
     ['t10','祖母綠深V裸背長禮服',         99, 6500],
     ['t11','酒紅絲緞吊帶睡裙',        116, 9000],
-    ['t12','黃金細鏈三點式裸衣',      135,12500],
+    ['t12','黑紗交叉綁帶透視短上衣',      135,12500],
   ].map(([id,name,charm,price])=>({id,name,charm,price,type:'top'})),
   bra: [
     ['b1', '蕾絲半罩杯內衣',         12,  250],
@@ -660,7 +660,7 @@ const CLOTHING_DB = {
     ['b9', '黑色絲綢肚兜內衣',      132, 6800],
     ['b10','無肩隱形胸貼',         157, 9000],
     ['b11','酒紅蕾絲半罩內衣',        185,12500],
-    ['b12','黃金鏈條露點胸飾',      215,17500],
+    ['b12','黑色蕾絲內衣',      215,17500],
   ].map(([id,name,charm,price])=>({id,name,charm,price,type:'bra'})),
   bottom: [
     ['bt1', '低腰緊身包臀短裙',       8,  150],
@@ -674,7 +674,7 @@ const CLOTHING_DB = {
     ['bt9', '黑金旗袍高衩裙',          84, 4800],
     ['bt10','祖母綠雙高衩長裙襬',         99, 6500],
     ['bt11','酒紅絲緞短裙襬',     116, 9000],
-    ['bt12','黃金細鏈遮陰裙',       135,12500],
+    ['bt12','黑紗傘狀透視短裙',       135,12500],
   ].map(([id,name,charm,price])=>({id,name,charm,price,type:'bottom'})),
   panties: [
     ['p1', '蕾絲低腰三角褲',         15,  300],
@@ -688,7 +688,7 @@ const CLOTHING_DB = {
     ['p9', '黑色絲綢丁字褲',        152, 6500],
     ['p10','祖母綠細帶丁字褲',          179, 9000],
     ['p11','酒紅絲緞三角褲',        209,12500],
-    ['p12','黃金鏈條開口內褲',      242,17500],
+    ['p12','黑色蕾絲三角褲',      242,17500],
   ].map(([id,name,charm,price])=>({id,name,charm,price,type:'panties'})),
   ear: [
     ['e1', '玫瑰金細耳釘',            6,  150],
@@ -758,7 +758,7 @@ const CLOTHING_DB = {
     ['sk9', '黑色透膚大腿襪',      92, 4500],
     ['sk10','裸膚隱形絲襪',       112, 6250],
     ['sk11','酒紅蕾絲吊帶大腿襪',   135, 8500],
-    ['sk12','黃金鏈條纏腿襪飾',   160,12000],
+    ['sk12','黑色蕾絲吊帶大腿襪',   160,12000],
   ].map(([id,name,charm,price])=>({id,name,charm,price,type:'socks'})),
   shoes: [
     ['sh1', '裸色細跟低跟鞋',          6,  200],
@@ -772,7 +772,7 @@ const CLOTHING_DB = {
     ['sh9', '黑色尖頭細跟高跟鞋',       110, 8250],
     ['sh10','銀色繞踝綁帶高跟',      132,11000],
     ['sh11','酒紅絲緞細跟高跟鞋',      156,15000],
-    ['sh12','黃金鑲鑽繫踝細跟高跟',183,21000],
+    ['sh12','黑色繞踝魚口細跟涼鞋',183,21000],
   ].map(([id,name,charm,price])=>({id,name,charm,price,type:'shoes',indestructible:true})),
 };
 
