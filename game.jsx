@@ -1726,7 +1726,7 @@ const StatusPanel = ({ player, onBack }) => {
           <span>三圍 <b className="text-slate-100">{player.bust}/{player.waist}/{player.hips}</b></span>
           <span>罩杯 <b className="text-pink-300">{player.cup}</b></span>
           {player.isPregnant
-            ? <span className="text-pink-400">🤰 {stage}・第{player.pregnantDays}天</span>
+            ? <span className="text-pink-400 font-semibold">已懷孕（{stage}・第{player.pregnantDays}天）</span>
             : <span className="text-slate-500">未懷孕</span>}
         </div>
       </div>
@@ -2508,7 +2508,7 @@ const SaveLoadPanel = ({slots, readMeta, onSave, onLoad, onDelete, onBack, onExp
                   <p className={S.textSmWhite}>{meta.name}</p>
                   <p className={S.textXsGray}>第{meta.day}天　{formatTime(meta.time||0)}</p>
                   <p className={S.textXsGray}>體力 {meta.hp}/{meta.baseHp}　💰 {meta.gold}G　🌟 {meta.fame}</p>
-                  {meta.isPregnant && <p className="text-pink-400 text-xs">🤰 懷孕第 {meta.pregnantDays} 天</p>}
+                  {meta.isPregnant && <p className="text-pink-400 text-xs">已懷孕第 {meta.pregnantDays} 天</p>}
                 </>
               ) : (
                 <p className={S.textSmItalic}>空槽</p>
@@ -4820,7 +4820,7 @@ const TowerGame = () => {
                     <span className="text-slate-300">腰 <span className="text-rose-300 font-semibold">{meas.waist}cm</span></span>
                     <span className="mx-1 text-slate-600">·</span>
                     <span className="text-slate-300">臀 <span className="text-rose-300 font-semibold">{meas.hips}cm</span></span>
-                    {player.isPregnant && <div className="text-pink-400 font-semibold mt-0.5">🤰 懷孕{stageLabel}・第{player.pregnantDays}天</div>}
+                    {player.isPregnant && <div className="text-pink-400 font-semibold mt-0.5">已懷孕{stageLabel}・第{player.pregnantDays}天</div>}
                     {!player.isPregnant && (player.postBirthDays||0)>0 && (player.postBirthDays||0)<=60 && <div className="text-pink-300 font-semibold mt-0.5">🍼 泌乳期</div>}
                   </div>
                 );
