@@ -1732,17 +1732,9 @@ const StatusPanel = ({ player, onBack }) => {
       </div>
       {/* 立繪（大圖）*/}
       <div className="rounded-2xl overflow-hidden border border-pink-900/50 shadow-lg shadow-pink-950/30">
-        <div className="relative flex justify-center" style={{background:'radial-gradient(120% 80% at 50% 0%, #2a1c2e, #0e1320)'}}>
+        <div className="flex justify-center" style={{background:'radial-gradient(120% 80% at 50% 0%, #2a1c2e, #0e1320)'}}>
           <img src={pickPortrait(player.clothes)} alt="柯妤潔" className="block"
             style={{maxHeight:'58vh', width:'auto', maxWidth:'100%'}}/>
-          <div className="absolute top-2 right-2 bg-black/55 backdrop-blur px-2.5 py-1 rounded-full border border-pink-800/50">
-            <span className="text-pink-300 font-bold text-sm">{player.cup} 罩杯</span>
-          </div>
-          {player.isPregnant && (
-            <div className="absolute top-2 left-2 bg-pink-900/70 backdrop-blur px-2.5 py-1 rounded-full border border-pink-600/50">
-              <span className="text-pink-200 text-xs">🤰 {stage}・{player.pregnantDays}天</span>
-            </div>
-          )}
         </div>
       </div>
       {/* 目前服裝（緊接立繪下方，方便對照衣服↔立繪）*/}
