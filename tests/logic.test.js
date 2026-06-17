@@ -141,6 +141,14 @@ describe('立繪挑選 pickPortrait', () => {
     expect(pickPortrait({ ...fullSet(6), top: { id: 't3' } })).toBe(fallback);
   });
 
+  it('T0 牛仔休閒（預設起始裝）：穿 t0/bt0/sh0 顯示 casual 立繪，且與不成套預設同圖', () => {
+    const t0 = pickPortrait({ top: { id: 't0' }, bottom: { id: 'bt0' }, shoes: { id: 'sh0' } });
+    expect(t0).toBeTruthy();
+    expect(t0).toBe(pickPortrait({})); // T0 立繪＝casual 預設圖
+    // 內衣/內褲/襪不檢：穿任意內搭仍是 T0
+    expect(pickPortrait({ top: { id: 't0' }, bra: { id: 'b0' }, bottom: { id: 'bt0' }, panties: { id: 'p0' }, socks: { id: 'sk0' }, shoes: { id: 'sh0' } })).toBe(t0);
+  });
+
   it('比基尼組合：內衣b14+內褲p14 且 其他部位皆空，才顯示比基尼立繪', () => {
     const bikini = pickPortrait({ bra: { id: 'b14' }, panties: { id: 'p14' } });
     expect(bikini).toBeTruthy();

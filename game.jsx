@@ -470,6 +470,8 @@ const PORTRAIT_RULES = [
   { img: keyuT2, need: { top: 't2', bra: 'b2', bottom: 'bt2', socks: 'sk2', shoes: 'sh2' } },
   // 黑洋裝：胸罩 b1 有穿（領口蕾絲半罩）；內褲被遮 → 不檢
   { img: keyuT1, need: { top: 't1', bra: 'b1', bottom: 'bt1', socks: 'sk1', shoes: 'sh1' } },
+  // T0 牛仔休閒（預設起始裝）：T恤+牛仔褲+運動鞋可見；內衣/內褲/襪看不到 → 不檢。立繪沿用 casual 圖
+  { img: keyuFallback, need: { top: 't0', bottom: 'bt0', shoes: 'sh0' } },
 ];
 const pickPortrait = (clothes) => {
   const c = clothes || {};
@@ -674,6 +676,7 @@ const CAT_KEYS = Object.keys(CAT);
 
 const CLOTHING_DB = {
   top: [
+    ['t0', '玫瑰印花T恤', 8, 250],
     ['t1', '低胸細肩帶背心',         14,   600],
     ['t2', '深V緊身吊帶衫',          18,  950],
     ['t3', '交叉綁帶低胸背心',       21,  1600],
@@ -689,6 +692,7 @@ const CLOTHING_DB = {
     ['t13','黑色哥德蕾絲馬甲上衣', 31, 7200],
   ].map(([id,name,charm,price])=>({id,name,charm,price,type:'top'})),
   bra: [
+    ['b0', '普通胸罩', 8, 200],
     ['b1', '蕾絲半罩杯內衣',         14,  600],
     ['b2', '黑色深V托高內衣',        14,  600],
     ['b3', '深V半罩杯薄紗內衣',      21,  1600],
@@ -705,6 +709,7 @@ const CLOTHING_DB = {
     ['b14','紅色比基尼罩杯', 25, 2500],
   ].map(([id,name,charm,price])=>({id,name,charm,price,type:'bra'})),
   bottom: [
+    ['bt0', '緊身牛仔褲', 6, 250],
     ['bt1', '低腰緊身包臀短裙',       14,  600],
     ['bt2', '超短包臀皮裙',          21,  1600],
     ['bt3', '低腰緊身熱褲',          18,  950],
@@ -720,6 +725,7 @@ const CLOTHING_DB = {
     ['bt13','黑色哥德不對稱蕾絲裙', 31, 7200],
   ].map(([id,name,charm,price])=>({id,name,charm,price,type:'bottom'})),
   panties: [
+    ['p0', '普通內褲', 8, 200],
     ['p1', '蕾絲低腰三角褲',         18,  950],
     ['p2', '透膚薄紗低腰褲',         21,  1600],
     ['p3', '細肩帶低腰丁字褲',       22,  1500],
@@ -792,6 +798,7 @@ const CLOTHING_DB = {
     ['l12','黑珍珠全貫穿陰唇環',   41,32500],
   ].map(([id,name,charm,price])=>({id,name,charm,price,type:'labia'})),
   socks: [
+    ['sk0', '普通襪子', 5, 100],
     ['sk1', '黑色絲質短襪',           10,  400],
     ['sk2', '白色蕾絲短襪',           10,  400],
     ['sk3', '黑色絲質膝上襪',        10,  400],
@@ -807,6 +814,7 @@ const CLOTHING_DB = {
     ['sk13','黑色哥德蕾絲大腿襪', 20, 1800],
   ].map(([id,name,charm,price])=>({id,name,charm,price,type:'socks'})),
   shoes: [
+    ['sh0', '白色運動鞋', 5, 200],
     ['sh1', '裸色細跟低跟鞋',          10,  400],
     ['sh2', '黑色細跟包頭鞋',         10,  400],
     ['sh3', '白色細跟高跟鞋',         13,  650],
@@ -829,7 +837,7 @@ const INIT_CLOTHES = {
   socks:CLOTHING_DB.socks[0], shoes:CLOTHING_DB.shoes[0],
   ear:null, navel:null, areola:null, labia:null
 };
-const INIT_WARDROBE = ['t1','b1','bt1','p1','sk1','sh1'];
+const INIT_WARDROBE = ['t0','b0','bt0','p0','sk0','sh0'];
 
 // ─────────────────────────────────────────────────────────────────────
 // 3.2 罩杯 — CUPS（A~Z 26 個等級）
