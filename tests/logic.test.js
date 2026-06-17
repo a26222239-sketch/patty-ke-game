@@ -124,13 +124,17 @@ describe('立繪挑選 pickPortrait', () => {
     expect(pickPortrait({})).toBeTruthy();
   });
 
-  it('比基尼組合：只要穿 b14(內衣)+p14(內褲) 即顯示專屬立繪，不靠整套分級', () => {
+  it('比基尼組合：內衣b14+內褲p14 且 其他部位皆空，才顯示比基尼立繪', () => {
     const bikini = pickPortrait({ bra: { id: 'b14' }, panties: { id: 'p14' } });
     expect(bikini).toBeTruthy();
-    // 與預設 T1 fallback 不同 → 組合規則確實優先生效
+    // 與預設 T1 fallback 不同 → 組合規則確實生效
     expect(bikini).not.toBe(pickPortrait({}));
-    // 即使其他部位穿著低階單品，仍以組合規則為準
-    expect(pickPortrait({ top: { id: 't1' }, bra: { id: 'b14' }, panties: { id: 'p14' } })).toBe(bikini);
+    // 上衣有穿東西 → 不符合「其他部位為空」→ 不顯示比基尼（落回分級）
+    expect(pickPortrait({ top: { id: 't1' }, bra: { id: 'b14' }, panties: { id: 'p14' } })).not.toBe(bikini);
+    // 鞋子有穿 → 同樣不符合
+    expect(pickPortrait({ bra: { id: 'b14' }, panties: { id: 'p14' }, shoes: { id: 'sh1' } })).not.toBe(bikini);
+    // 只穿 b14 但內褲不是 p14 → 不符合
+    expect(pickPortrait({ bra: { id: 'b14' }, panties: { id: 'p1' } })).not.toBe(bikini);
   });
 });
 
