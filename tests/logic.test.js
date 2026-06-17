@@ -153,6 +153,24 @@ describe('立繪挑選 pickPortrait', () => {
     // 只穿 b14 但內褲不是 p14 → 不符合
     expect(pickPortrait({ bra: { id: 'b14' }, panties: { id: 'p1' } })).not.toBe(bikini);
   });
+
+  it('晚禮服 T10：須穿 t10/bt10/p10/sh10 且「確定沒戴胸罩、沒穿襪」才顯示', () => {
+    const t10 = { top: { id: 't10' }, bottom: { id: 'bt10' }, panties: { id: 'p10' }, shoes: { id: 'sh10' } };
+    const p10 = pickPortrait(t10);
+    expect(p10).not.toBe(pickPortrait({}));
+    // 戴上胸罩 → 違反 empty(bra) → 回預設
+    expect(pickPortrait({ ...t10, bra: { id: 'b5' } })).toBe(pickPortrait({}));
+    // 穿上襪子 → 違反 empty(socks) → 回預設
+    expect(pickPortrait({ ...t10, socks: { id: 'sk5' } })).toBe(pickPortrait({}));
+  });
+
+  it('空姐 T7：膚色絲襪看不出 → 不檢襪，穿不穿襪都顯示同一張', () => {
+    const t7 = { top: { id: 't7' }, bra: { id: 'b7' }, bottom: { id: 'bt7' }, shoes: { id: 'sh7' } };
+    const a = pickPortrait(t7);
+    expect(a).not.toBe(pickPortrait({}));
+    expect(pickPortrait({ ...t7, socks: { id: 'sk5' } })).toBe(a); // 加任意襪仍是 T7
+    expect(pickPortrait({ ...t7, socks: null })).toBe(a); // 沒穿襪也是 T7
+  });
 });
 
 describe('折扣換算 formatZhe（修補先前未定義的崩潰 bug）', () => {
