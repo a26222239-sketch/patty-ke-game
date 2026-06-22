@@ -981,7 +981,7 @@ const TOWN_LOCATIONS = [
 const LOC_BY_ID = Object.fromEntries(TOWN_LOCATIONS.map(l=>[l.id, l]));
 // 地點氛圍一句話（進場立繪卡下方顯示，世界觀一致；立繪未到位前先撐起沈浸感）
 const LOCATION_FLAVOR = {
-  brothel:  '霓虹把窗紙染成一片曖昧的桃紅，廊上脂粉與菸酒的氣味揮之不去。',
+  brothel:  '桃紅霓虹從窗外透進來，落在柔軟的大床上——這是她難得能喘口氣、也最常被佔有的房間。',
   shop:     '老式日光燈管嗡嗡作響，貨架上塞滿了從成衣到雜貨的零碎物事。',
   tattoo:   '門簾後針機低鳴，牆上釘滿刺青與穿環的樣稿，混著一股消毒水味。',
   police:   '灰牆藍燈的派出所，鐵柵與公告欄前總有人低著頭進出。',
