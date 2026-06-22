@@ -979,17 +979,6 @@ const TOWN_LOCATIONS = [
   { id:'home',     name:'家',     icon:'🏠', district:'west',    x:16, y:50, todo:true  },
 ];
 const LOC_BY_ID = Object.fromEntries(TOWN_LOCATIONS.map(l=>[l.id, l]));
-// 地點氛圍一句話（進場立繪卡下方顯示，世界觀一致；立繪未到位前先撐起沈浸感）
-const LOCATION_FLAVOR = {
-  brothel:  '桃紅霓虹從窗外透進來，落在柔軟的大床上——這是她難得能喘口氣、也最常被佔有的房間。',
-  shop:     '老式日光燈管嗡嗡作響，貨架上塞滿了從成衣到雜貨的零碎物事。',
-  tattoo:   '門簾後針機低鳴，牆上釘滿刺青與穿環的樣稿，混著一股消毒水味。',
-  police:   '灰牆藍燈的派出所，鐵柵與公告欄前總有人低著頭進出。',
-  hospital: '消毒水氣味從自動門裡漫出來，候診的長椅上坐著神色各異的人。',
-  toilet:   '巷角一間沒人管的公廁，磁磚剝落、燈光昏黃，門板上滿是塗鴉。',
-  field:    '入夜後的窄巷，鐵皮與電線交錯，遠處的霓虹照不進來的暗角。',
-  home:     '紅瓦舊樓的一間小屋，是這座城裡她唯一能喘口氣的角落。',
-};
 const TRAVEL_K = 0.4;   // 距離→分鐘係數（同區約3~6分、跨城約20~26分）
 // 跨區移動時間：以兩區「區中心」的距離計（同區=0，中區←→外區約13~14分，外區對角約19~27分）
 const districtMins = (fromD, toD) => {
@@ -1051,27 +1040,27 @@ const TownMiniMap = ({ districtId, timeMinutes }) => {
 };
 
 
-// 地點場景立繪卡：9:16 直幅；有立繪顯示圖、無則顯示佔位；底部浮層疊地點名與區域
-const LocationArt = ({ locId }) => {
-  const art = LOCATION_ART[locId];
-  const loc = LOC_BY_ID[locId];
-  const dist = DISTRICTS[loc?.district];
+// 地點橫幅圖片按鈕：16:9；有場景圖顯示圖、無則顯示佔位；底部浮層疊地點名與狀態
+const LocationButton = ({ loc, status, tint, onClick }) => {
+  const art = LOCATION_ART[loc.id];
   return (
-    <div className="relative mx-auto rounded-xl overflow-hidden border"
-      style={{aspectRatio:'9 / 16', maxHeight:'56vh', borderColor:'#3c3346', background:'#14101a'}}>
+    <button onClick={onClick}
+      className="relative w-full rounded-xl overflow-hidden border text-left transition active:scale-[0.98]"
+      style={{aspectRatio:'16 / 9', borderColor: loc.todo?'#3a3a3a':(tint?.borderColor||'#4a3c2e'),
+              background:'#14101a', opacity: loc.todo?0.72:1}}>
       {art
-        ? <img src={art} alt={loc?.name} className="w-full h-full object-cover" style={{display:'block'}}/>
-        : <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-center px-4">
-            <span style={{fontSize:'3.2rem'}}>{loc?.icon}</span>
-            <span className="text-slate-300 text-base font-bold">{loc?.name}</span>
-            <span className="text-slate-600 text-xs">立繪製作中…</span>
+        ? <img src={art} alt={loc.name} className="w-full h-full object-cover"
+            style={{display:'block', filter: loc.todo?'grayscale(0.55)':'none'}}/>
+        : <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-center">
+            <span style={{fontSize:'2.2rem', opacity:0.55}}>{loc.icon}</span>
+            <span className="text-slate-600 text-[10px]">立繪製作中…</span>
           </div>}
-      <div className="absolute bottom-0 left-0 right-0 px-3 pt-6 pb-2"
-        style={{background:'linear-gradient(transparent, rgba(0,0,0,0.78))'}}>
-        <div className="text-white font-bold text-lg leading-tight">{loc?.icon} {loc?.name}</div>
-        {dist && <div className="text-slate-300 text-xs">{dist.name}・{dist.sub}</div>}
+      <div className="absolute inset-x-0 bottom-0 px-3 pt-6 pb-1.5"
+        style={{background:'linear-gradient(transparent, rgba(0,0,0,0.82))'}}>
+        <div className="text-white font-bold text-base leading-tight">{loc.icon} {loc.name}</div>
+        <div className="text-[11px] font-normal" style={{color: loc.todo?'#9a8a6a':'#e0cca0'}}>{status}</div>
       </div>
-    </div>
+    </button>
   );
 };
 
@@ -1571,7 +1560,6 @@ const TowerGame = () => {
   const actionRef = useRef(false);
   const [logs,    setLogs]    = useState([{msg:'歡迎來到柯妤潔的娼館。',tag:'hint'}]);
   const [gs,      setGs]      = useState('title');
-  const [pendingLoc, setPendingLoc] = useState(null); // 地點立繪：點按地點後在 locIntro 待進入的地點 id
   const [shopArea, setShopArea] = useState('lobby');  // 商店內裝子區：lobby(門口)/counter(櫃台)/clothing(服飾區)
   const [cart, setCart] = useState([]);  // 購物籃：服飾區「拿起」的物品，到櫃台結帳才扣款
   const [shopDiscount, setShopDiscount] = useState(0);  // 跟老闆服務換來的結帳折扣(0~1)
@@ -3537,30 +3525,6 @@ const TowerGame = () => {
   if (gs==='wardrobe') return <WardrobePanel player={player} onEquip={doEquip} onUnequip={doUnequip} onBack={()=>setGs('explore')}/>;
   if (gs==='piercingShop') return <PiercingShopPanel player={player} tattooDraft={tattooDraft} setTattooDraft={setTattooDraft} onBuyPiercing={doBuyPiercing} onTattoo={doTattoo} onTrimHair={doTrimHair} onBack={()=>setGs('street')}/>;
   // 街道（外出後）：上方即時小地圖定位。先在「目前所在區」才能進該區的店；要去別區先點「前往」走過去。
-  // 地點立繪卡：點街道上的地點後，先看場景立繪＋氛圍，再決定進入
-  if (gs==='locIntro' && pendingLoc) {
-    const loc = LOC_BY_ID[pendingLoc];
-    const sh = Math.floor(player.timeMinutes/60)%24;
-    const shopClosedNow = pendingLoc==='shop' && !(sh>=9 && sh<21);
-    const canEnter = loc && !loc.todo && !shopClosedNow;
-    return (
-      <div className="space-y-3">
-        <LocationArt locId={pendingLoc} />
-        <div className="text-slate-300 text-sm leading-relaxed px-1">{LOCATION_FLAVOR[pendingLoc]}</div>
-        {loc?.todo && <div className="text-amber-300/80 text-xs px-1">🚧 這個地點還在規劃中，暫時只能在外頭看看。</div>}
-        {shopClosedNow && <div className="text-amber-300/80 text-xs px-1">🔒 商店已打烊（營業 09:00–21:00）。</div>}
-        <div className="grid grid-cols-2 gap-2">
-          <button onClick={()=>{ const id=pendingLoc; setPendingLoc(null); enterLocation(id); }}
-            disabled={!canEnter}
-            className={`w-full py-2 rounded-lg font-bold ${canEnter?'bg-pink-800 hover:bg-pink-700 text-pink-100':'bg-slate-800 text-slate-600 cursor-not-allowed'}`}>
-            進入
-          </button>
-          <button onClick={()=>{ setPendingLoc(null); setGs('street'); }}
-            className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-bold">離開</button>
-        </div>
-      </div>
-    );
-  }
   if (gs==='street') {
     const sh = Math.floor(player.timeMinutes/60)%24; const shopOpen = sh>=9 && sh<21;
     const curD = player.district || 'east';
@@ -3578,21 +3542,16 @@ const TowerGame = () => {
     const otherDs = DISTRICT_ADJ[curD] || [];   // 只列相鄰可直達的區（依路線圖，外區只通中區）
     return (
       <div className="space-y-2">
-        {/* 目前所在區：可進入的店家 */}
+        {/* 目前所在區：可進入的店家（橫幅圖片按鈕，點圖進場） */}
         <div className="text-xs font-bold pl-1" style={{color:'#c0a070'}}>📍 {DISTRICTS[curD]?.name}・{DISTRICTS[curD]?.sub}（目前所在）</div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2">
           {curLocs.map(l=>{
             const closedShop = l.id==='shop' && !shopOpen;
-            const sub = l.todo ? '🚧 規劃中' : closedShop ? '已打烊' : '進入';
-            const onClick = ()=>{ setPendingLoc(l.id); setGs('locIntro'); };
-            return (
-              <button key={l.id} onClick={onClick}
-                className={`w-full text-sm ${l.todo?BR.dis:BR.ghost}`}
-                style={l.todo?BR.disStyle:{...BR.ghostStyle, ...(TINT[l.id]||{})}}>
-                {l.icon} {l.name}
-                <div className="text-[10px] font-normal" style={{color: l.todo?'#5a5a5a':'#9a8868'}}>{sub}</div>
-              </button>
-            );
+            const status = l.todo ? '🚧 規劃中' : closedShop ? '已打烊' : '進入';
+            const onClick = l.todo
+              ? ()=>addLog(`🚧 ${l.name}還在規劃中，暫時不能去。`,'hint')
+              : ()=>enterLocation(l.id);
+            return <LocationButton key={l.id} loc={l} status={status} tint={TINT[l.id]} onClick={onClick} />;
           })}
         </div>
         {/* 前往其他區（跨區移動，扣時間） */}

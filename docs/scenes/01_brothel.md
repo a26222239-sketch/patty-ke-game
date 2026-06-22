@@ -1,15 +1,15 @@
 # 場景 #1 ── 娼院 / 柯妤潔的娼房（brothel）
 
-交付檔名：**`loc_brothel.png`**　規格：**9:16 直幅 1080×1920 PNG**
+交付檔名：**`loc_brothel.png`**　規格：**16:9 橫幅 768×432 PNG**（街道橫幅按鈕底圖）
 先讀 `docs/ART_BIBLE.md` 全域規範，本場景在其框架內。
 
 ## 定位
 這張＝玩家「進入娼院」後看到的**柯妤潔私人娼房內部**（遊戲 home base）。依文本，她的房間其實**現代、體面**：暖黃床頭燈、柔軟大床、入口地毯、梳妝台鏡子、連通的現代浴室、房門外的走廊。要曖昧、私密、溫暖，紅燈區底色但室內乾淨體面——**不是破棚屋**。
 
 ## 鏡頭／構圖
-- 9:16 直幅，第一人稱「剛踏進房門」的代入視角，平視略低。
-- **大床為主角**，置於畫面中段偏右；左側帶到梳妝台與鏡子；一側門縫可瞥見現代浴室（磁磚＋花灑），另一側／後方暗示通往走廊的房門。
-- 畫面**下方 1/3 留乾淨**（地毯、床前地面）給名稱浮層。
+- 16:9 橫幅廣角，第一人稱「剛踏進房門」的代入視角，平視略低。
+- **大床為主角**，置於畫面中段偏右；左側帶到梳妝台與鏡子；一側門縫可瞥見現代浴室（磁磚＋花灑），另一側／後方暗示通往走廊的房門。橫幅正好把整間房一覽帶入。
+- 畫面**左下角留乾淨**（地面／地毯）給地點名浮層。
 
 ## 空間與道具（依文本，越細越好）
 - **大床**：雙人床，鋪柔軟床單與枕頭，微亂；床頭板，床頭櫃上一盞**暖黃床頭燈**。
@@ -31,7 +31,7 @@
 在 Gemini 一併**上傳 `keyu_t1.png`（角色立繪）當風格參考**，指令：沿用其線稿、上色與配色風格，畫成背景場景，**畫面中不要出現人物**。
 
 ## 一致性關鍵詞（務必沿用）
-Korean adult manhwa / webtoon illustration · clean refined dark-brown line art + smooth soft gradient shading, semi-realistic glossy surfaces · muted slightly desaturated palette · polished adult visual-novel CG finish · (NOT thick oil painting, NOT photobash, NOT flat cel anime, NOT pixel) · modern decent interior (NOT a slum) · brothel bedroom in a modern Asian red-light district · night · warm tungsten bedside lamp + pink-magenta neon through the window · big bed hero, vanity mirror, glimpse of a modern tiled bathroom with a shower, dim corridor beyond the door · no clear people (only distant blurred silhouettes) · clean lower third for text · 9:16 1080×1920.
+Korean adult manhwa / webtoon illustration · clean refined dark-brown line art + smooth soft gradient shading, semi-realistic glossy surfaces · muted slightly desaturated palette · polished adult visual-novel CG finish · (NOT thick oil painting, NOT photobash, NOT flat cel anime, NOT pixel) · modern decent interior (NOT a slum) · brothel bedroom in a modern Asian red-light district · night · warm tungsten bedside lamp + pink-magenta neon through the window · big bed hero, vanity mirror, glimpse of a modern tiled bathroom with a shower, dim corridor beyond the door · no clear people (only distant blurred silhouettes) · clean lower-left corner for a name label · 16:9 768×432 landscape.
 
 ---
 
@@ -46,11 +46,11 @@ Scene: interior of a young courtesan's private room inside a brothel, in the red
 
 Lighting: night, warm tungsten bedside lamp as key light (intimate, cozy) mixed with cool pink-magenta neon through the window, purplish shadows, gentle volumetric haze, slightly brighter toward the bathroom, dimmer toward the corridor. Decadent, intimate, sensual mood, mid contrast, no crushed blacks.
 
-Composition: keep the lower third (rug and floor in front of the bed) simple and clean for a text overlay.
+Composition: wide establishing shot taking in the whole room; keep the lower-left corner (floor / rug) simple and clean for a small name label.
 
-Aspect ratio 9:16, vertical, 1080x1920.
+Aspect ratio 16:9, landscape, 768x432.
 ```
 
 ## 繁中對照（微調用）
 **（記得附 `keyu_t1.png` 當風格參考圖；沿用其線稿／上色／配色，畫背景、不要出現人物。）**
-夜晚、現代亞洲紅燈區娼院裡柯妤潔的私人房內部，第一人稱剛踏進房門的視角。室內現代體面（非破棚屋）：柔軟微亂的雙人大床為主角＋床頭暖黃燈、床頭櫃；床前柔軟地毯；靠牆梳妝台＋大鏡、散落化妝品口紅面紙、旁邊一張椅；一側半開門露出現代浴室（白磁磚、玻璃花灑隔間、浴巾、水氣、暖白光）；房門外昏暗紅暈走廊、僅遠處模糊人影；窗外桃紅霓虹灑在床單與地面。暖鎢絲床頭燈為主光＋窗外冷桃紅霓虹、紫調陰影、體積光。曖昧私密慵懶。半寫實 manhwa 厚塗、非像素非照片。下方 1/3 留乾淨。9:16、1080×1920。
+夜晚、現代亞洲紅燈區娼院裡柯妤潔的私人房內部，第一人稱剛踏進房門的視角。室內現代體面（非破棚屋）：柔軟微亂的雙人大床為主角＋床頭暖黃燈、床頭櫃；床前柔軟地毯；靠牆梳妝台＋大鏡、散落化妝品口紅面紙、旁邊一張椅；一側半開門露出現代浴室（白磁磚、玻璃花灑隔間、浴巾、水氣、暖白光）；房門外昏暗紅暈走廊、僅遠處模糊人影；窗外桃紅霓虹灑在床單與地面。暖鎢絲床頭燈為主光＋窗外冷桃紅霓虹、紫調陰影、體積光。曖昧私密慵懶。韓系 manhwa 細線稿＋柔順漸層、非厚塗非像素非照片。左下角留乾淨。16:9、768×432。
