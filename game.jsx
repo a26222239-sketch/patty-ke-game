@@ -425,6 +425,7 @@ import { pick, vary, formatTime, getTimePeriod, addMinutes, formatText, formatZh
 import { genEnemy, genBoss, genBossDate, restockShop, makeShop, buildUndressLogs, getRevealDesc, restoreUndressed, enemyCanSeeHair, getHairPartName, getHairLevelName } from './src/systems.js'; // 系統(SECTION 13-16 已抽出)
 import { CAT, CLOTHING_DB, CUPS, SERVICE_NAMES, SERVICE_TO_CLOTHING, PIERCING_NAMES, TATTOO_LOCS, INITIAL_PLAYER } from './src/data.js'; // 資料表（SECTION 3-4 已抽出）
 import { pickPortrait } from './src/portrait.js'; // 立繪系統（已抽出）
+import { LOCATION_ART } from './src/locationArt.js'; // 地點場景立繪登記表
 // 肉償休息區老闆文本：遵守規則 N（地點+行為），歸在「商店休息區」地點 = shopRest*，
 // 與前台 shop* 區分。下表把娼館池鍵對應到 shopRest* 池；未列入或未填者自動回退娼館文本。
 const BOSS_KEY = {
@@ -978,6 +979,17 @@ const TOWN_LOCATIONS = [
   { id:'home',     name:'家',     icon:'🏠', district:'west',    x:16, y:50, todo:true  },
 ];
 const LOC_BY_ID = Object.fromEntries(TOWN_LOCATIONS.map(l=>[l.id, l]));
+// 地點氛圍一句話（進場立繪卡下方顯示，世界觀一致；立繪未到位前先撐起沈浸感）
+const LOCATION_FLAVOR = {
+  brothel:  '霓虹把窗紙染成一片曖昧的桃紅，廊上脂粉與菸酒的氣味揮之不去。',
+  shop:     '老式日光燈管嗡嗡作響，貨架上塞滿了從成衣到雜貨的零碎物事。',
+  tattoo:   '門簾後針機低鳴，牆上釘滿刺青與穿環的樣稿，混著一股消毒水味。',
+  police:   '灰牆藍燈的派出所，鐵柵與公告欄前總有人低著頭進出。',
+  hospital: '消毒水氣味從自動門裡漫出來，候診的長椅上坐著神色各異的人。',
+  toilet:   '巷角一間沒人管的公廁，磁磚剝落、燈光昏黃，門板上滿是塗鴉。',
+  field:    '入夜後的窄巷，鐵皮與電線交錯，遠處的霓虹照不進來的暗角。',
+  home:     '紅瓦舊樓的一間小屋，是這座城裡她唯一能喘口氣的角落。',
+};
 const TRAVEL_K = 0.4;   // 距離→分鐘係數（同區約3~6分、跨城約20~26分）
 // 跨區移動時間：以兩區「區中心」的距離計（同區=0，中區←→外區約13~14分，外區對角約19~27分）
 const districtMins = (fromD, toD) => {
@@ -1038,6 +1050,30 @@ const TownMiniMap = ({ districtId, timeMinutes }) => {
   );
 };
 
+
+// 地點場景立繪卡：9:16 直幅；有立繪顯示圖、無則顯示佔位；底部浮層疊地點名與區域
+const LocationArt = ({ locId }) => {
+  const art = LOCATION_ART[locId];
+  const loc = LOC_BY_ID[locId];
+  const dist = DISTRICTS[loc?.district];
+  return (
+    <div className="relative mx-auto rounded-xl overflow-hidden border"
+      style={{aspectRatio:'9 / 16', maxHeight:'56vh', borderColor:'#3c3346', background:'#14101a'}}>
+      {art
+        ? <img src={art} alt={loc?.name} className="w-full h-full object-cover" style={{display:'block'}}/>
+        : <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-center px-4">
+            <span style={{fontSize:'3.2rem'}}>{loc?.icon}</span>
+            <span className="text-slate-300 text-base font-bold">{loc?.name}</span>
+            <span className="text-slate-600 text-xs">立繪製作中…</span>
+          </div>}
+      <div className="absolute bottom-0 left-0 right-0 px-3 pt-6 pb-2"
+        style={{background:'linear-gradient(transparent, rgba(0,0,0,0.78))'}}>
+        <div className="text-white font-bold text-lg leading-tight">{loc?.icon} {loc?.name}</div>
+        {dist && <div className="text-slate-300 text-xs">{dist.name}・{dist.sub}</div>}
+      </div>
+    </div>
+  );
+};
 
 // ── 索取折扣（為老闆服務換結帳折扣）──────────────────────────────────────
 // 每天只有一次機會：柯妤潔提議 → 老闆判定接受/拒絕 → 接受則開出折扣 → 柯妤潔決定接不接受。
@@ -1535,6 +1571,7 @@ const TowerGame = () => {
   const actionRef = useRef(false);
   const [logs,    setLogs]    = useState([{msg:'歡迎來到柯妤潔的娼館。',tag:'hint'}]);
   const [gs,      setGs]      = useState('title');
+  const [pendingLoc, setPendingLoc] = useState(null); // 地點立繪：點按地點後在 locIntro 待進入的地點 id
   const [shopArea, setShopArea] = useState('lobby');  // 商店內裝子區：lobby(門口)/counter(櫃台)/clothing(服飾區)
   const [cart, setCart] = useState([]);  // 購物籃：服飾區「拿起」的物品，到櫃台結帳才扣款
   const [shopDiscount, setShopDiscount] = useState(0);  // 跟老闆服務換來的結帳折扣(0~1)
@@ -3435,6 +3472,15 @@ const TowerGame = () => {
   // ──────────────────────────────────────────────────────────────────
   // renderActions
 // ──────────────────────────────────────────────────
+  // 從地點立繪卡「進入」：依地點 id 觸發進場行為（todo 地點僅提示）
+  const enterLocation = (id) => {
+    const loc = LOC_BY_ID[id];
+    if (!loc || loc.todo) { addLog(`🚧 ${loc?.name||'這裡'}還在規劃中，暫時不能進去。`, 'hint'); return; }
+    if (id==='brothel') { setGs('explore'); return; }
+    if (id==='shop')    { doOpenShop(); return; }
+    if (id==='tattoo')  { setPlayer(p=>addMinutes(p,10)); setGs('piercingShop'); return; }
+  };
+
   const renderActions = () => {
   // 浴室場景
   if (gs==='bathroom') {
@@ -3491,15 +3537,33 @@ const TowerGame = () => {
   if (gs==='wardrobe') return <WardrobePanel player={player} onEquip={doEquip} onUnequip={doUnequip} onBack={()=>setGs('explore')}/>;
   if (gs==='piercingShop') return <PiercingShopPanel player={player} tattooDraft={tattooDraft} setTattooDraft={setTattooDraft} onBuyPiercing={doBuyPiercing} onTattoo={doTattoo} onTrimHair={doTrimHair} onBack={()=>setGs('street')}/>;
   // 街道（外出後）：上方即時小地圖定位。先在「目前所在區」才能進該區的店；要去別區先點「前往」走過去。
+  // 地點立繪卡：點街道上的地點後，先看場景立繪＋氛圍，再決定進入
+  if (gs==='locIntro' && pendingLoc) {
+    const loc = LOC_BY_ID[pendingLoc];
+    const sh = Math.floor(player.timeMinutes/60)%24;
+    const shopClosedNow = pendingLoc==='shop' && !(sh>=9 && sh<21);
+    const canEnter = loc && !loc.todo && !shopClosedNow;
+    return (
+      <div className="space-y-3">
+        <LocationArt locId={pendingLoc} />
+        <div className="text-slate-300 text-sm leading-relaxed px-1">{LOCATION_FLAVOR[pendingLoc]}</div>
+        {loc?.todo && <div className="text-amber-300/80 text-xs px-1">🚧 這個地點還在規劃中，暫時只能在外頭看看。</div>}
+        {shopClosedNow && <div className="text-amber-300/80 text-xs px-1">🔒 商店已打烊（營業 09:00–21:00）。</div>}
+        <div className="grid grid-cols-2 gap-2">
+          <button onClick={()=>{ const id=pendingLoc; setPendingLoc(null); enterLocation(id); }}
+            disabled={!canEnter}
+            className={`w-full py-2 rounded-lg font-bold ${canEnter?'bg-pink-800 hover:bg-pink-700 text-pink-100':'bg-slate-800 text-slate-600 cursor-not-allowed'}`}>
+            進入
+          </button>
+          <button onClick={()=>{ setPendingLoc(null); setGs('street'); }}
+            className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-bold">離開</button>
+        </div>
+      </div>
+    );
+  }
   if (gs==='street') {
     const sh = Math.floor(player.timeMinutes/60)%24; const shopOpen = sh>=9 && sh<21;
     const curD = player.district || 'east';
-    // 各地點的進場行為（todo 地點不可進）
-    const ENTER = {
-      brothel: ()=>setGs('explore'),
-      shop:    doOpenShop,
-      tattoo:  ()=>{ setPlayer(p=>addMinutes(p,10)); setGs('piercingShop'); },
-    };
     const TINT = {
       brothel:{color:'#e08ab0', borderColor:'#7a2650', borderBottomColor:'#a03070'},
       shop:   {color:'#e0b060', borderColor:'#7a5020', borderBottomColor:'#a07030'},
@@ -3520,8 +3584,7 @@ const TowerGame = () => {
           {curLocs.map(l=>{
             const closedShop = l.id==='shop' && !shopOpen;
             const sub = l.todo ? '🚧 規劃中' : closedShop ? '已打烊' : '進入';
-            const onClick = l.todo ? ()=>addLog(`🚧 ${l.name}還在規劃中，暫時不能去。`,'hint')
-              : ()=>{ const f=ENTER[l.id]; if(f) f(); };
+            const onClick = ()=>{ setPendingLoc(l.id); setGs('locIntro'); };
             return (
               <button key={l.id} onClick={onClick}
                 className={`w-full text-sm ${l.todo?BR.dis:BR.ghost}`}
