@@ -27,14 +27,20 @@
 ## 氛圍
 私密、曖昧、被佔有過的暖意；脂粉味。體面但情慾——「她難得能喘口氣、也最常被佔有的房間」。
 
+## ★ 風格參考圖（務必）
+在 Gemini 一併**上傳 `keyu_t1.png`（角色立繪）當風格參考**，指令：沿用其線稿、上色與配色風格，畫成背景場景，**畫面中不要出現人物**。
+
 ## 一致性關鍵詞（務必沿用）
-semi-realistic painterly anime / manhwa CG background · modern decent interior (NOT a slum) · brothel bedroom in a modern Asian red-light district · night · warm tungsten bedside lamp + pink-magenta neon through the window · big bed hero, vanity mirror, glimpse of a modern tiled bathroom with a shower, dim corridor beyond the door · no clear people (only distant blurred silhouettes) · clean lower third for text · 9:16 1080×1920.
+Korean adult manhwa / webtoon illustration · clean refined dark-brown line art + smooth soft gradient shading, semi-realistic glossy surfaces · muted slightly desaturated palette · polished adult visual-novel CG finish · (NOT thick oil painting, NOT photobash, NOT flat cel anime, NOT pixel) · modern decent interior (NOT a slum) · brothel bedroom in a modern Asian red-light district · night · warm tungsten bedside lamp + pink-magenta neon through the window · big bed hero, vanity mirror, glimpse of a modern tiled bathroom with a shower, dim corridor beyond the door · no clear people (only distant blurred silhouettes) · clean lower third for text · 9:16 1080×1920.
 
 ---
 
 ## 可直接貼給 Gemini 的 Prompt（英文，建議用這版）
+> 用法：**附上 `keyu_t1.png` 當風格參考圖**，再貼下方文字。
 ```
-Semi-realistic painterly anime / Korean manhwa style CG background, adult visual-novel quality, detailed hand-painted illustration look (NOT pixel art, NOT a photo, NOT western cartoon).
+Match the line art, shading and color style of the attached reference character illustration, but paint a BACKGROUND/ENVIRONMENT scene — do NOT include any person.
+
+Style: Korean adult manhwa / webtoon illustration — clean refined dark-brown line art with smooth soft gradient shading, semi-realistic glossy surfaces, muted slightly desaturated naturalistic palette, polished adult visual-novel CG finish. NOT thick oil painting, NOT photobash, NOT flat cel anime, NOT pixel art.
 
 Scene: interior of a young courtesan's private room inside a brothel, in the red-light district of a modern-day Asian town, at night. First-person "just stepped through the door" viewpoint, eye-level slightly low. The room is modern and decent (NOT a slum): a soft double bed with slightly rumpled sheets and pillows as the hero of the frame, a headboard with a nightstand and a glowing warm-yellow bedside lamp. A soft rug by the bed/entrance. Against one wall a vanity table with a large mirror, scattered cosmetics, lipstick and a tissue box, with a chair beside it. On one side a half-open door reveals a modern ensuite bathroom: white/cream tiles, a glass shower stall, hanging towels, soft white light and a hint of steam. Beyond the room door, a dim carpeted corridor with red-tinted lighting and only blurred distant human silhouettes (no clear people). A window lets pink-magenta neon from the red-light district spill across the sheets and floor.
 
@@ -46,4 +52,5 @@ Aspect ratio 9:16, vertical, 1080x1920.
 ```
 
 ## 繁中對照（微調用）
+**（記得附 `keyu_t1.png` 當風格參考圖；沿用其線稿／上色／配色，畫背景、不要出現人物。）**
 夜晚、現代亞洲紅燈區娼院裡柯妤潔的私人房內部，第一人稱剛踏進房門的視角。室內現代體面（非破棚屋）：柔軟微亂的雙人大床為主角＋床頭暖黃燈、床頭櫃；床前柔軟地毯；靠牆梳妝台＋大鏡、散落化妝品口紅面紙、旁邊一張椅；一側半開門露出現代浴室（白磁磚、玻璃花灑隔間、浴巾、水氣、暖白光）；房門外昏暗紅暈走廊、僅遠處模糊人影；窗外桃紅霓虹灑在床單與地面。暖鎢絲床頭燈為主光＋窗外冷桃紅霓虹、紫調陰影、體積光。曖昧私密慵懶。半寫實 manhwa 厚塗、非像素非照片。下方 1/3 留乾淨。9:16、1080×1920。
