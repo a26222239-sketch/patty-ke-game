@@ -1,6 +1,7 @@
 // 全域常數 — 時間 / 存檔版本 / 體毛 / 商品價格（從 game.jsx SECTION 2 抽出）
 
 // 2.1 存檔版本號 — 每次 INITIAL_PLAYER 結構有破壞性變動時遞增
+export const SHOPKEEPER_NAME = '阿坤'; // 商店老闆名
 export const SAVE_VERSION = 1;
 
 // 2.2 體毛系統常數
