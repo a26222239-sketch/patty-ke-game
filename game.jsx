@@ -1055,10 +1055,10 @@ const LocationButton = ({ loc, status, tint, onClick }) => {
             <span style={{fontSize:'2.2rem', opacity:0.55}}>{loc.icon}</span>
             <span className="text-slate-600 text-[10px]">立繪製作中…</span>
           </div>}
-      <div className="absolute inset-x-0 bottom-0 px-3 pt-6 pb-1.5"
+      <div className="absolute inset-x-0 bottom-0 px-2 pt-4 pb-1"
         style={{background:'linear-gradient(transparent, rgba(0,0,0,0.82))'}}>
-        <div className="text-white font-bold text-base leading-tight">{loc.icon} {loc.name}</div>
-        <div className="text-[11px] font-normal" style={{color: loc.todo?'#9a8a6a':'#e0cca0'}}>{status}</div>
+        <div className="text-white font-bold text-sm leading-tight">{loc.icon} {loc.name}</div>
+        <div className="text-[10px] font-normal" style={{color: loc.todo?'#9a8a6a':'#e0cca0'}}>{status}</div>
       </div>
     </button>
   );
@@ -3542,9 +3542,9 @@ const TowerGame = () => {
     const otherDs = DISTRICT_ADJ[curD] || [];   // 只列相鄰可直達的區（依路線圖，外區只通中區）
     return (
       <div className="space-y-2">
-        {/* 目前所在區：可進入的店家（橫幅圖片按鈕，點圖進場） */}
+        {/* 目前所在區：可進入的店家（橫幅圖片按鈕，兩欄＝半寬半高，點圖進場） */}
         <div className="text-xs font-bold pl-1" style={{color:'#c0a070'}}>📍 {DISTRICTS[curD]?.name}・{DISTRICTS[curD]?.sub}（目前所在）</div>
-        <div className="grid grid-cols-1 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {curLocs.map(l=>{
             const closedShop = l.id==='shop' && !shopOpen;
             const status = l.todo ? '🚧 規劃中' : closedShop ? '已打烊' : '進入';
