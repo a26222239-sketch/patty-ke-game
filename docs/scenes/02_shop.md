@@ -7,10 +7,11 @@
 中區商業街上一間**小型情趣成衣雜貨店**：賣女裝、內衣、絲襪、鞋子，櫃台也賣保險套等小物。老闆是個有點猥瑣的中年男（**畫面不畫人**）。氣氛是**現代、略擁擠、生活感、微微風塵但不髒亂**——比娼房樸素、商業味重，不走奢華。
 
 ## 鏡頭／構圖
-- **生 3:2**（只比 16:9 高一點，底部薄薄一條我會裁掉去浮水印）；店內廣角視角、平視。
-- **櫃台用 3/4 斜角**：同時看到櫃台**正面（朝客人的實心檯板）**與繞過側邊看到的**老闆那一側＋櫃台下方**，這樣藏人凹洞才露得出來。
+- **生 3:2**（只比 16:9 高一點，底部薄薄一條我會裁掉去浮水印）；相機**略高、俯視一點點**的 3/4 斜角。
+- **櫃台放畫面正中**，收銀機與其**正下方的藏人凹洞**要**完整露出、落在畫面垂直中段**。
+- **凹洞是重點：必須完整呈現、不可碰到畫面底邊**（否則會被裁到）。
+- **底部約 15% 留自然的地板前景**（會被裁掉）；櫃台／收銀機／凹洞都要在這條之上。
 - 兩側貨架塞滿衣物、後牆有私密後場的門。
-- 主體放在**畫面上 85%**（只裁薄薄底部）。
 
 ## 空間與道具（越細越好）
 - **吊衣桿／貨架**：成排女裝——洋裝、吊帶、內衣、馬甲、絲襪、情趣服飾，色彩繽紛但擺得有點滿；幾個**穿著服飾的模特兒假人**（無臉或素臉，避免像真人）。
@@ -29,7 +30,7 @@
 熱鬧塞滿的小店、生活感、隱約的風塵味（賣的是情趣成衣）；老闆不在鏡頭裡但能感覺這是他的地盤。**不要奢華、不要霓虹夜店感、不要破爛。**
 
 ## 一致性關鍵詞（務必沿用）
-Korean adult manhwa / webtoon illustration · clean refined dark line art + smooth soft gradient shading · muted naturalistic palette · adult VN CG finish · (NOT oil painting, NOT photobash, NOT flat cel, NOT pixel) · interior of a small modern lingerie / women's-clothing & sundries shop in a commercial street · DAYTIME, bright natural daylight through the front window + interior shop lights · three-quarter view of the counter (see its solid customer-facing front AND, around the end, the shopkeeper's side) · shopkeeper stands facing the customers normally · a plain empty kneehole footwell (NO cushion) recessed DIRECTLY BELOW the cash register on the shopkeeper's side, hidden from the shop floor by the solid front panel (one person could kneel in it, empty) · a plain CLOSED (slightly ajar) door in the back wall to a PRIVATE back room — NOT open-plan · racks packed with dresses, lingerie, stockings, faceless mannequins, cash register + glass display case on the counter, stock boxes in a corner · cramped, lived-in, slightly seedy but not dirty, NOT luxurious, NO neon · completely empty, NO people and NO silhouettes · NO readable text / letters / labels / logos / watermark anywhere · keep subjects in upper ~85% (thin bottom trimmed) · 3:2 (will be cropped to 16:9).
+Korean adult manhwa / webtoon illustration · clean refined dark line art + smooth soft gradient shading · muted naturalistic palette · adult VN CG finish · (NOT oil painting, NOT photobash, NOT flat cel, NOT pixel) · interior of a small modern lingerie / women's-clothing & sundries shop in a commercial street · DAYTIME, bright natural daylight through the front window + interior shop lights · three-quarter view of the counter (see its solid customer-facing front AND, around the end, the shopkeeper's side) · shopkeeper stands facing the customers normally · a plain empty kneehole footwell (NO cushion) recessed DIRECTLY BELOW the cash register on the shopkeeper's side, hidden from the shop floor by the solid front panel (one person could kneel in it, empty) · a plain CLOSED (slightly ajar) door in the back wall to a PRIVATE back room — NOT open-plan · racks packed with dresses, lingerie, stockings, faceless mannequins, cash register + glass display case on the counter, stock boxes in a corner · cramped, lived-in, slightly seedy but not dirty, NOT luxurious, NO neon · completely empty, NO people and NO silhouettes · NO readable text / letters / labels / logos / watermark anywhere · slightly elevated 3/4 camera, counter centred, register + footwell beneath it FULLY visible in the middle of the frame and NOT touching the bottom edge · lower ~15% is open foreground floor (will be trimmed) · 3:2 (will be cropped to 16:9).
 
 ---
 
@@ -45,12 +46,12 @@ Lighting: bright DAYTIME — strong natural daylight pouring in through the shop
 
 IMPORTANT — the scene is completely empty: absolutely NO people, NO human figures and NO silhouettes anywhere.
 
-Composition: wide establishing shot of the counter and shop, filling the frame naturally; keep the main subjects in roughly the upper 85% (only a thin bottom strip will be trimmed).
+Composition: camera at a slightly ELEVATED eye-level, three-quarter angle looking down a little at the counter. Place the checkout counter in the CENTRE of the frame so that the cash register AND the kneehole footwell recessed directly beneath it are FULLY visible and sit around the vertical MIDDLE of the image. The footwell is the KEY element — it must be shown completely and must NOT touch the bottom edge. Leave the lower ~15% of the frame as open foreground floor in front of the counter (a thin bottom strip that will be trimmed); keep the counter, register and footwell comfortably ABOVE that strip.
 
 Absolutely NO text, letters, numbers, words, captions, labels, logos, watermarks, signatures or UI anywhere in the image.
 
-Aspect ratio 3:2 (landscape).  ← 生 3:2，我會裁掉底部約 16%（含浮水印）變成 16:9
+Aspect ratio 3:2 (landscape).  ← 生 3:2，我會裁掉底部約 16%（含浮水印）變成 16:9；暗格務必在中段、別碰底邊
 ```
 
 ## 繁中對照
-白天、現代亞洲商業街上一間小型情趣女裝雜貨店內部，**櫃台用 3/4 斜角**：同時看到櫃台**朝客人的實心正面**，與繞過側邊看到的**老闆那一側＋櫃台下方**。**櫃台朝客人那面是整片實心檯板（從店內地板看不到櫃台底下）；**收銀機正下方**、檯面內側有一個空的跪人凹洞（不放軟墊），被實心正面擋住、外人看不到**（可藏一人蹲跪、空無人）。**老闆正常面對客人站著操作收銀機，人就在凹洞正上方。** 後牆一道**緊閉（最多開一條縫）的普通門**＝私密後場，**不要開放式空間**，就一扇關著的門暗示後面有隱密房間。兩側貨架塞滿女裝、無臉假人；櫃台上舊收銀機＋玻璃展示櫃＋小電扇；牆上樣品衣與空白吊牌、純圖案海報；磁磚／舊木地板、角落庫存紙箱。**窗／玻璃門外明亮白日街景**、自然光灑入＋店內燈。擁擠生活感、微風塵但乾淨，非奢華非霓虹。**完全無人、無任何文字/logo/浮水印**；主體放上 85%（只裁薄底）。韓系 manhwa 細線稿＋柔順漸層、非厚塗非像素。**生 3:2（我裁成 16:9）**。
+白天、現代亞洲商業街上一間小型情趣女裝雜貨店內部，**櫃台用 3/4 斜角**：同時看到櫃台**朝客人的實心正面**，與繞過側邊看到的**老闆那一側＋櫃台下方**。**櫃台朝客人那面是整片實心檯板（從店內地板看不到櫃台底下）；**收銀機正下方**、檯面內側有一個空的跪人凹洞（不放軟墊），被實心正面擋住、外人看不到**（可藏一人蹲跪、空無人）。**老闆正常面對客人站著操作收銀機，人就在凹洞正上方。** 後牆一道**緊閉（最多開一條縫）的普通門**＝私密後場，**不要開放式空間**，就一扇關著的門暗示後面有隱密房間。兩側貨架塞滿女裝、無臉假人；櫃台上舊收銀機＋玻璃展示櫃＋小電扇；牆上樣品衣與空白吊牌、純圖案海報；磁磚／舊木地板、角落庫存紙箱。**窗／玻璃門外明亮白日街景**、自然光灑入＋店內燈。擁擠生活感、微風塵但乾淨，非奢華非霓虹。**完全無人、無任何文字/logo/浮水印**；相機略高俯視一點的 3/4 角、櫃台置中，**收銀機與其正下方凹洞完整露出、在畫面中段、不碰底邊**；底部約 15% 留地板前景（會裁）。韓系 manhwa 細線稿＋柔順漸層、非厚塗非像素。**生 3:2（我裁成 16:9）**。
