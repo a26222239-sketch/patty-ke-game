@@ -1,6 +1,7 @@
 # 場景 #1 ── 娼院 / 柯妤潔的娼房（brothel）
 
 交付檔名：**`loc_brothel.png`**　規格：**16:9 橫幅 768×432 PNG**（街道橫幅按鈕底圖）
+本版用 **GPT 生成**：畫風已用文字寫足，**浮水印由使用者自行處理**；可選擇性附 `keyu_t1.png` 當風格參考更穩。
 先讀 `docs/ART_BIBLE.md` 全域規範，本場景在其框架內。
 
 ## 定位
@@ -27,30 +28,29 @@
 ## 氛圍
 私密、溫暖、低調奢華；像高級交際花的內室。木質與緞面的質感、暖燈下的曖昧——「她難得能喘口氣、也最常被佔有的房間」。**不要夜店／霓虹感。**
 
-## ★ 風格參考圖（務必）
-在 Gemini 一併**上傳 `keyu_t1.png`（角色立繪）當風格參考**，指令：沿用其線稿、上色與配色風格，畫成背景場景，**畫面中不要出現人物**。
+## ★ 風格
+畫風已在下方 prompt 開頭用文字寫足（韓系成人 manhwa／webtoon、乾淨細線稿＋柔順漸層、半寫實、暖而偏柔的低飽和）。可**選擇性附 `keyu_t1.png`** 當風格參考更穩；用 GPT 則靠文字描述即可。
 
 ## 一致性關鍵詞（務必沿用）
 Korean adult manhwa / webtoon illustration · clean refined dark-brown line art + smooth soft gradient shading, semi-realistic glossy surfaces · muted slightly desaturated palette · polished adult visual-novel CG finish · (NOT thick oil painting, NOT photobash, NOT flat cel anime, NOT pixel) · modern, decent, warm wood-toned and quietly luxurious bedroom (NOT a slum, NOT a neon nightclub) · high-class courtesan's chamber · night · single warm tungsten lamplight only, golden-amber mood, NO neon, NO pink/magenta light · dark walnut wood furniture and wood-panel wall, wood floor + rug, brass/gold accents, satin sheets, upholstered headboard · big bed hero, vanity mirror, glimpse of a modern warm-marble bathroom with a shower, dim corridor beyond the door, heavy curtains with soft warm city glow · completely empty, absolutely NO people and NO silhouettes anywhere · NO text / letters / labels / logos / watermark anywhere · fill the frame naturally · 16:9 landscape.
 
 ---
 
-## 可直接貼給 Gemini 的 Prompt（英文，建議用這版）
-> 用法：**附上 `keyu_t1.png` 當風格參考圖**，再貼下方文字。
+## 可直接貼給 GPT 的 Prompt（英文）
 ```
-Match the line art, shading and color style of the attached reference character illustration, but paint a BACKGROUND/ENVIRONMENT scene — do NOT include any person.
+A polished Korean adult manhwa / webtoon style illustration — the same look as a high-end adult visual novel. STYLE: clean, confident, fine dark-brown line art; smooth soft gradient shading (airbrushed, blended — NOT flat cel); semi-realistic rendering of materials with gentle highlights and soft shadows; a warm but slightly muted, desaturated naturalistic colour palette; refined, detailed yet uncluttered; glossy painterly finish. NOT thick impasto oil painting, NOT a photograph or photobash, NOT flat cel anime, NOT a western cartoon, NOT 3D render, NOT pixel art. Paint a BACKGROUND / ENVIRONMENT only — no people.
 
-Style: Korean adult manhwa / webtoon illustration — clean refined dark-brown line art with smooth soft gradient shading, semi-realistic glossy surfaces, muted slightly desaturated naturalistic palette, polished adult visual-novel CG finish. NOT thick oil painting, NOT photobash, NOT flat cel anime, NOT pixel art.
+Scene: interior of a high-class courtesan's private bedroom inside a brothel, in a modern-day Asian town, at night. First-person "just stepped through the door" viewpoint, eye-level slightly low, the bed roughly centered. The room is modern, decent and quietly luxurious with a WARM WOOD tone (NOT a slum, NOT a neon nightclub): a soft double bed as the hero of the frame with a dark walnut frame and an upholstered headboard, satin sheets (deep wine / champagne / charcoal) slightly rumpled, a wooden nightstand with a glowing warm-yellow brass table lamp. A wood floor (herringbone or wide plank) with a quality rug; one wood-panelled accent wall; brass / warm-gold accents on lamp, drawer handles and mirror frame; a velvet armchair. Against one wall a wooden vanity table with a large gold-framed mirror, scattered cosmetics, lipstick, a tissue box and a glass perfume bottle. On one side a half-open door reveals a modern ensuite bathroom with warm marble / cream tiles, a glass shower stall, brass fixtures, hanging towels, soft warm light and a hint of steam. Beyond the room door, a dim corridor lit by warm wall sconces with a wood floor — completely empty. A window with heavy drawn curtains lets only a soft warm city night glow seep through.
 
-Scene: interior of a high-class courtesan's private bedroom inside a brothel, in a modern-day Asian town, at night. First-person "just stepped through the door" viewpoint, eye-level slightly low. The room is modern, decent and quietly luxurious with a WARM WOOD tone (NOT a slum, NOT a neon nightclub): a soft double bed as the hero of the frame with a dark walnut frame and an upholstered headboard, satin sheets (deep wine / champagne / charcoal) slightly rumpled, a wooden nightstand with a glowing warm-yellow brass table lamp. A wood floor (herringbone or wide plank) with a quality rug; one wood-panelled accent wall; brass / warm-gold accents on lamp, drawer handles and mirror frame; a velvet armchair. Against one wall a wooden vanity table with a large gold-framed mirror, scattered cosmetics, lipstick, a tissue box and a glass perfume bottle. On one side a half-open door reveals a modern ensuite bathroom with warm marble / cream tiles, a glass shower stall, brass fixtures, hanging towels, soft warm light and a hint of steam. Beyond the room door, a dim corridor lit by warm wall sconces with a wood floor — the corridor is completely empty. A window with heavy drawn curtains lets only a soft warm city night glow seep through. IMPORTANT: the scene is completely empty, absolutely NO people, NO human figures and NO silhouettes anywhere.
+Lighting: night, a single warm tungsten lamplight scheme — the warm-yellow table lamp as key light, golden-amber intimate mood, warm brown shadows, gentle volumetric haze, wood and brass glowing softly. ABSOLUTELY NO neon, NO pink or magenta light. Intimate, sensual, quietly opulent, mid contrast, no crushed blacks.
 
-Lighting: night, a SINGLE warm tungsten lamplight scheme — warm-yellow table lamp / pendant as key light, golden-amber intimate mood, warm brown shadows, gentle volumetric haze, wood and brass glowing softly. ABSOLUTELY NO neon, NO pink or magenta light. Slightly brighter toward the bathroom, dimmer toward the corridor. Intimate, sensual, quietly opulent mood, mid contrast, no crushed blacks.
+IMPORTANT — the scene is completely empty: absolutely NO people, NO human figures and NO silhouettes anywhere.
 
-Composition: wide establishing shot taking in the whole room, the bed roughly centered, filling the frame naturally.
+Composition: wide establishing shot taking in the whole room, filling the frame naturally.
 
-Absolutely NO text, letters, numbers, words, captions, labels, logos, watermarks, signatures or UI anywhere in the image.
+Absolutely NO text, letters, numbers, words, captions, labels, logos, watermarks or signatures anywhere in the image.
 
-Aspect ratio 16:9, landscape.
+Aspect ratio 16:9, landscape (wide).
 ```
 
 ## 繁中對照（微調用）
