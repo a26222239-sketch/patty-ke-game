@@ -1055,10 +1055,10 @@ const LocationButton = ({ loc, status, tint, onClick }) => {
             <span style={{fontSize:'2.2rem', opacity:0.55}}>{loc.icon}</span>
             <span className="text-slate-600 text-[10px]">立繪製作中…</span>
           </div>}
-      <div className="absolute inset-x-0 bottom-0 px-2 pt-4 pb-1"
-        style={{background:'linear-gradient(transparent, rgba(0,0,0,0.82))'}}>
-        <div className="text-white font-bold text-sm leading-tight">{loc.icon} {loc.name}</div>
-        <div className="text-[10px] font-normal" style={{color: loc.todo?'#9a8a6a':'#e0cca0'}}>{status}</div>
+      <div className="absolute inset-x-0 top-0 px-2 pt-1 pb-4"
+        style={{background:'linear-gradient(rgba(0,0,0,0.78), transparent)'}}>
+        <div className="text-white font-bold text-sm leading-tight" style={{textShadow:'0 1px 3px rgba(0,0,0,0.9)'}}>{loc.name}</div>
+        <div className="text-[10px] font-normal" style={{color: loc.todo?'#cbb894':'#e6d2a6', textShadow:'0 1px 2px rgba(0,0,0,0.9)'}}>{status}</div>
       </div>
     </button>
   );
