@@ -9,7 +9,7 @@
 ## 鏡頭／構圖
 - 16:9 橫幅廣角，第一人稱「剛踏進房門」的代入視角，平視略低。
 - **大床為主角**，置於畫面中段偏右；左側帶到梳妝台與鏡子；一側門縫可瞥見現代浴室（磁磚＋花灑），另一側／後方暗示通往走廊的房門。橫幅正好把整間房一覽帶入。
-- 畫面**底部約 13% 留作單純可裁邊**（地面／空地，別放重要物件）——這條會被裁掉以去除右下角浮水印。**圖內不要任何文字／logo**；地點名之後由程式疊在左下，不用畫進圖裡。
+- 填滿畫面、自然構圖即可（不必留邊；浮水印我這端裁）。**圖內不要任何文字／logo**；地點名由程式疊在左上角，不用畫進圖。
 
 ## 空間與道具（依文本，越細越好）
 - **大床**：雙人床為主角，**深胡桃木床架＋軟包床頭板**，鋪緞面床單與枕頭（酒紅／香檳／炭灰等沉穩色），微亂；床頭木櫃上一盞**暖黃檯燈**（黃銅燈座、布燈罩）。
@@ -31,7 +31,7 @@
 在 Gemini 一併**上傳 `keyu_t1.png`（角色立繪）當風格參考**，指令：沿用其線稿、上色與配色風格，畫成背景場景，**畫面中不要出現人物**。
 
 ## 一致性關鍵詞（務必沿用）
-Korean adult manhwa / webtoon illustration · clean refined dark-brown line art + smooth soft gradient shading, semi-realistic glossy surfaces · muted slightly desaturated palette · polished adult visual-novel CG finish · (NOT thick oil painting, NOT photobash, NOT flat cel anime, NOT pixel) · modern, decent, warm wood-toned and quietly luxurious bedroom (NOT a slum, NOT a neon nightclub) · high-class courtesan's chamber · night · single warm tungsten lamplight only, golden-amber mood, NO neon, NO pink/magenta light · dark walnut wood furniture and wood-panel wall, wood floor + rug, brass/gold accents, satin sheets, upholstered headboard · big bed hero, vanity mirror, glimpse of a modern warm-marble bathroom with a shower, dim corridor beyond the door, heavy curtains with soft warm city glow · completely empty, absolutely NO people and NO silhouettes anywhere · NO text / letters / labels / logos / watermark anywhere · keep the bottom ~13% as plain croppable floor margin · 16:9 landscape.
+Korean adult manhwa / webtoon illustration · clean refined dark-brown line art + smooth soft gradient shading, semi-realistic glossy surfaces · muted slightly desaturated palette · polished adult visual-novel CG finish · (NOT thick oil painting, NOT photobash, NOT flat cel anime, NOT pixel) · modern, decent, warm wood-toned and quietly luxurious bedroom (NOT a slum, NOT a neon nightclub) · high-class courtesan's chamber · night · single warm tungsten lamplight only, golden-amber mood, NO neon, NO pink/magenta light · dark walnut wood furniture and wood-panel wall, wood floor + rug, brass/gold accents, satin sheets, upholstered headboard · big bed hero, vanity mirror, glimpse of a modern warm-marble bathroom with a shower, dim corridor beyond the door, heavy curtains with soft warm city glow · completely empty, absolutely NO people and NO silhouettes anywhere · NO text / letters / labels / logos / watermark anywhere · fill the frame naturally · 16:9 landscape.
 
 ---
 
@@ -46,7 +46,7 @@ Scene: interior of a high-class courtesan's private bedroom inside a brothel, in
 
 Lighting: night, a SINGLE warm tungsten lamplight scheme — warm-yellow table lamp / pendant as key light, golden-amber intimate mood, warm brown shadows, gentle volumetric haze, wood and brass glowing softly. ABSOLUTELY NO neon, NO pink or magenta light. Slightly brighter toward the bathroom, dimmer toward the corridor. Intimate, sensual, quietly opulent mood, mid contrast, no crushed blacks.
 
-Composition: wide establishing shot taking in the whole room, the bed roughly centered. IMPORTANT — leave the BOTTOM ~13% of the frame as plain, unimportant floor / empty margin (nothing important there); it will be cropped off to remove the corner watermark. Do NOT place key furniture in the bottom 13% or the bottom-right corner.
+Composition: wide establishing shot taking in the whole room, the bed roughly centered, filling the frame naturally.
 
 Absolutely NO text, letters, numbers, words, captions, labels, logos, watermarks, signatures or UI anywhere in the image.
 
@@ -55,4 +55,4 @@ Aspect ratio 16:9, landscape.
 
 ## 繁中對照（微調用）
 **（記得附 `keyu_t1.png` 當風格參考圖；沿用其線稿／上色／配色，畫背景、不要出現人物。）**
-夜晚、現代亞洲娼院裡柯妤潔的私人臥房內部，第一人稱剛踏進房門的視角。室內現代體面、**暖木質調、低調奢華**，像高級交際花內室（非破棚屋、非霓虹夜店）：深胡桃木床架＋軟包床頭板、緞面床單（酒紅／香檳／炭灰）微亂、木床頭櫃上黃銅暖黃檯燈；木地板＋質感地毯、一面木飾板牆、黃銅暖金小五金、絨布扶手椅；木質梳妝台＋暖金邊大鏡、散落化妝品口紅面紙香水瓶；一側半開門露出現代浴室（暖大理石／米色磁磚、玻璃花灑、黃銅龍頭、浴巾、水氣、暖光）；房門外昏暗走廊有暖黃壁燈、木地坪、**空無一人（不要任何人影／剪影）**；窗拉厚簾、僅透柔和溫暖夜城微光。**單一暖鎢絲燈光、金棕氛圍、完全不要霓虹／桃紅冷光**；暖褐陰影、木與黃銅溫潤光澤、體積光。私密、溫暖、低調奢華。韓系 manhwa 細線稿＋柔順漸層、非厚塗非像素非照片。**圖內絕無任何文字／logo／浮水印**；**底部約 13% 留單純可裁邊**。16:9 橫幅。
+夜晚、現代亞洲娼院裡柯妤潔的私人臥房內部，第一人稱剛踏進房門的視角。室內現代體面、**暖木質調、低調奢華**，像高級交際花內室（非破棚屋、非霓虹夜店）：深胡桃木床架＋軟包床頭板、緞面床單（酒紅／香檳／炭灰）微亂、木床頭櫃上黃銅暖黃檯燈；木地板＋質感地毯、一面木飾板牆、黃銅暖金小五金、絨布扶手椅；木質梳妝台＋暖金邊大鏡、散落化妝品口紅面紙香水瓶；一側半開門露出現代浴室（暖大理石／米色磁磚、玻璃花灑、黃銅龍頭、浴巾、水氣、暖光）；房門外昏暗走廊有暖黃壁燈、木地坪、**空無一人（不要任何人影／剪影）**；窗拉厚簾、僅透柔和溫暖夜城微光。**單一暖鎢絲燈光、金棕氛圍、完全不要霓虹／桃紅冷光**；暖褐陰影、木與黃銅溫潤光澤、體積光。私密、溫暖、低調奢華。韓系 manhwa 細線稿＋柔順漸層、非厚塗非像素非照片。**圖內絕無任何文字／logo／浮水印**；填滿畫面自然構圖。16:9 橫幅。

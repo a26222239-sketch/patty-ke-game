@@ -15,7 +15,7 @@
 // 尚未繪製的地點 → 維持 null，UI 會顯示「立繪製作中」佔位卡。
 
 import brothelArt  from '../loc_brothel.png';
-// import shopArt     from '../loc_shop.png';
+import shopArt     from '../loc_shop.png';
 // import tattooArt   from '../loc_tattoo.png';
 // import policeArt   from '../loc_police.png';
 // import hospitalArt from '../loc_hospital.png';
@@ -25,7 +25,7 @@ import brothelArt  from '../loc_brothel.png';
 
 export const LOCATION_ART = {
   brothel:  brothelArt,
-  shop:     null,
+  shop:     shopArt,
   tattoo:   null,
   police:   null,
   hospital: null,

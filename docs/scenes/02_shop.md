@@ -1,6 +1,6 @@
 # 場景 #2 ── 商店（shop）｜中區・商業
 
-交付檔名：**`loc_shop.png`**　最終規格：**16:9，768×432 PNG**（Gemini 生原生 16:9 即可，我這端裁底 13% 去浮水印後縮放）。
+交付檔名：**`loc_shop.png`**　最終規格：**16:9，768×432 PNG**（Gemini 生原生 16:9 即可；浮水印與裁切由我這端處理，prompt 不必提）。
 先讀 `docs/ART_BIBLE.md`。**附 `keyu_t1.png` 當風格參考圖**。
 
 ## 定位
@@ -10,7 +10,7 @@
 - 16:9 橫幅廣角，第一人稱「剛走進店裡」的代入視角，平視。
 - 主體：**兩側塞滿衣物的貨架／吊衣桿**往內延伸，引導視線到**後方的結帳櫃台**。
 - 視角**略偏一側**，使櫃台的**工作側（內側）半露出來**——剛好能瞥見櫃台下方那個**藏人的暗格空間**，以及櫃台後方通往**休息室**的門。
-- 底部約 13% 留單純可裁地面邊；重要物件別放最底或右下角。
+- 填滿畫面、自然構圖即可（不必留邊；浮水印我這端裁）。
 
 ## 空間與道具（越細越好）
 - **吊衣桿／貨架**：成排女裝——洋裝、吊帶、內衣、馬甲、絲襪、情趣服飾，色彩繽紛但擺得有點滿；幾個**穿著服飾的模特兒假人**（無臉或素臉，避免像真人）。
@@ -29,7 +29,7 @@
 熱鬧塞滿的小店、生活感、隱約的風塵味（賣的是情趣成衣）；老闆不在鏡頭裡但能感覺這是他的地盤。**不要奢華、不要霓虹夜店感、不要破爛。**
 
 ## 一致性關鍵詞（務必沿用）
-Korean adult manhwa / webtoon illustration · clean refined dark line art + smooth soft gradient shading · muted naturalistic palette · adult VN CG finish · (NOT oil painting, NOT photobash, NOT flat cel, NOT pixel) · interior of a small modern lingerie / women's-clothing & sundries shop in a commercial street · night, shop brightly lit (old fluorescent tubes + warm fill) · racks and rails packed with dresses, lingerie, stockings, a few faceless mannequins, a solid-fronted checkout counter with a cash register and a glass display case · a hidden concealed kneehole cavity UNDER the counter (big enough for one person to crouch unseen, small cushion inside, empty) · behind the counter a half-open door to a small staff break room (worn sofa, low table, locker, kettle, dim warm light) · stock boxes in a corner · cramped, lived-in, slightly seedy but not dirty, NOT luxurious, NO neon · completely empty, NO people and NO silhouettes · NO readable text / letters / labels / logos / watermark anywhere · keep bottom ~13% as plain croppable floor margin · 16:9 landscape.
+Korean adult manhwa / webtoon illustration · clean refined dark line art + smooth soft gradient shading · muted naturalistic palette · adult VN CG finish · (NOT oil painting, NOT photobash, NOT flat cel, NOT pixel) · interior of a small modern lingerie / women's-clothing & sundries shop in a commercial street · night, shop brightly lit (old fluorescent tubes + warm fill) · racks and rails packed with dresses, lingerie, stockings, a few faceless mannequins, a solid-fronted checkout counter with a cash register and a glass display case · a hidden concealed kneehole cavity UNDER the counter (big enough for one person to crouch unseen, small cushion inside, empty) · behind the counter a half-open door to a small staff break room (worn sofa, low table, locker, kettle, dim warm light) · stock boxes in a corner · cramped, lived-in, slightly seedy but not dirty, NOT luxurious, NO neon · completely empty, NO people and NO silhouettes · NO readable text / letters / labels / logos / watermark anywhere · fill the frame naturally · 16:9 landscape.
 
 ---
 
@@ -45,7 +45,7 @@ Lighting: night outside (dark street through the door/window) but the interior i
 
 IMPORTANT — the scene is completely empty: absolutely NO people, NO human figures and NO silhouettes anywhere.
 
-Composition: wide establishing shot down the aisle toward the counter. Leave the BOTTOM ~13% of the frame as plain, unimportant floor margin (nothing important there); it will be cropped. Do NOT place key items in the bottom 13% or the bottom-right corner.
+Composition: wide establishing shot down the aisle toward the counter, filling the frame naturally.
 
 Absolutely NO text, letters, numbers, words, captions, labels, logos, watermarks, signatures or UI anywhere in the image.
 
@@ -53,4 +53,4 @@ Aspect ratio 16:9, landscape.
 ```
 
 ## 繁中對照
-夜晚、現代亞洲商業街上一間小型情趣女裝雜貨店內部，店內燈火通明，第一人稱剛走進店裡的視角。視角略偏一側、看得到櫃台工作側。兩側貨架吊桿塞滿女裝（洋裝／內衣／馬甲／絲襪／鞋），視線往後引到結帳櫃台（舊收銀機＋玻璃展示櫃放小盒物＋空高腳凳＋小電扇）；**櫃台正面實心、底下留一個藏一個人蹲跪的暗格凹洞（內鋪小軟墊、空著無人，客人方向看不到）**；**櫃台後半開門通往小休息室（舊沙發、小茶几、置物櫃、熱水壺、昏黃暖光）**；幾個無臉服飾假人；牆上掛樣品衣與空白吊牌、純圖案海報；磁磚／舊木地板、角落堆庫存紙箱。擁擠生活感、微風塵但乾淨，非奢華非霓虹。頭頂老式日光燈冷白＋暖補光、櫃台暖燈；門外夜街暗。**完全無人、無任何文字/logo/浮水印**；**底部約13%留可裁邊**。韓系 manhwa 細線稿＋柔順漸層、非厚塗非像素。16:9 橫幅。
+夜晚、現代亞洲商業街上一間小型情趣女裝雜貨店內部，店內燈火通明，第一人稱剛走進店裡的視角。視角略偏一側、看得到櫃台工作側。兩側貨架吊桿塞滿女裝（洋裝／內衣／馬甲／絲襪／鞋），視線往後引到結帳櫃台（舊收銀機＋玻璃展示櫃放小盒物＋空高腳凳＋小電扇）；**櫃台正面實心、底下留一個藏一個人蹲跪的暗格凹洞（內鋪小軟墊、空著無人，客人方向看不到）**；**櫃台後半開門通往小休息室（舊沙發、小茶几、置物櫃、熱水壺、昏黃暖光）**；幾個無臉服飾假人；牆上掛樣品衣與空白吊牌、純圖案海報；磁磚／舊木地板、角落堆庫存紙箱。擁擠生活感、微風塵但乾淨，非奢華非霓虹。頭頂老式日光燈冷白＋暖補光、櫃台暖燈；門外夜街暗。**完全無人、無任何文字/logo/浮水印**；填滿畫面自然構圖。韓系 manhwa 細線稿＋柔順漸層、非厚塗非像素。16:9 橫幅。
