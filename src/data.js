@@ -19,6 +19,7 @@ export const CLOTHING_DB = {
     ['t11','酒紅絲緞吊帶睡裙',        28, 4300],
     ['t12','黑紗交叉綁帶透視短上衣',      25,2500],
     ['t13','黑色哥德蕾絲馬甲上衣', 31, 7200],
+    ['t14','黑色削肩交叉細肩帶背心', 18, 1200],
   ].map(([id,name,charm,price])=>({id,name,charm,price,type:'top'})),
   bra: [
     ['b0', '普通胸罩', 8, 200],
@@ -52,6 +53,7 @@ export const CLOTHING_DB = {
     ['bt11','酒紅絲緞短裙襬',     28, 4300],
     ['bt12','黑紗傘狀透視短裙',       25,2500],
     ['bt13','黑色哥德不對稱蕾絲裙', 31, 7200],
+    ['bt14','低腰丹寧牛仔短褲', 14, 700],
   ].map(([id,name,charm,price])=>({id,name,charm,price,type:'bottom'})),
   panties: [
     ['p0', '普通內褲', 8, 200],
@@ -141,6 +143,7 @@ export const CLOTHING_DB = {
     ['sk11','酒紅蕾絲吊帶大腿襪',   20, 1800],
     ['sk12','黑色蕾絲吊帶大腿襪',   17,1000],
     ['sk13','黑色哥德蕾絲大腿襪', 20, 1800],
+    ['sk14','黑色透膚及膝襪', 12, 500],
   ].map(([id,name,charm,price])=>({id,name,charm,price,type:'socks'})),
   shoes: [
     ['sh0', '白色運動鞋', 5, 200],
@@ -157,6 +160,7 @@ export const CLOTHING_DB = {
     ['sh11','酒紅絲緞細跟高跟鞋',      16,1100],
     ['sh12','黑色繞踝魚口細跟涼鞋',17,1000],
     ['sh13','黑色哥德厚底繫帶踝靴', 20, 1800],
+    ['sh14','白色繫踝瑪莉珍高跟鞋', 14, 800],
   ].map(([id,name,charm,price])=>({id,name,charm,price,type:'shoes',indestructible:true})),
 };
 
