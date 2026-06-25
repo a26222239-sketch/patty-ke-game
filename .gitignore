@@ -2,3 +2,6 @@ node_modules
 dist
 *.local
 .DS_Store
+
+# Real-ESRGAN model weights (downloaded via tools/download_weights.sh)
+tools/weights/
