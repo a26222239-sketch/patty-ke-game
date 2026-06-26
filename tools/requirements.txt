@@ -1,0 +1,15 @@
+# Python deps for the 立繪 art tools (tools/). CPU is fine; GPU optional.
+# Install with:  pip install -r tools/requirements.txt
+
+# enhance_art.py — Real-ESRGAN upscaling (self-contained RRDBNet, no basicsr needed)
+torch
+torchvision
+numpy
+pillow
+
+# remove_bg.py — background removal
+rembg
+onnxruntime
+
+# skin_transfer.py — skin-tone colour transfer
+opencv-python-headless
