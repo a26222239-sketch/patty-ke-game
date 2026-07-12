@@ -426,6 +426,8 @@ import { genEnemy, genBoss, genBossDate, restockShop, makeShop, buildUndressLogs
 import { CAT, CLOTHING_DB, CUPS, SERVICE_NAMES, SERVICE_TO_CLOTHING, PIERCING_NAMES, TATTOO_LOCS, INITIAL_PLAYER } from './src/data.js'; // 資料表（SECTION 3-4 已抽出）
 import { pickPortrait } from './src/portrait.js'; // 立繪系統（已抽出）
 import { LOCATION_ART } from './src/locationArt.js'; // 地點場景立繪登記表
+import { completeTutorialStep, getFirstWeekObjective } from './src/progression.js';
+import ObjectivePanel from './src/components/ObjectivePanel.jsx';
 // 肉償休息區老闆文本：遵守規則 N（地點+行為），歸在「商店休息區」地點 = shopRest*，
 // 與前台 shop* 區分。下表把娼館池鍵對應到 shopRest* 池；未列入或未填者自動回退娼館文本。
 const BOSS_KEY = {
@@ -1834,6 +1836,14 @@ const TowerGame = () => {
       }
     }
     setEnemy(newEnemy);
+    setPlayer(p => ({
+      ...p,
+      progress: {
+        ...(p.progress || {}),
+        ...completeTutorialStep(p.progress, 'meet_first_customer'),
+        customerVisits: (p.progress?.customerVisits || 0) + 1,
+      },
+    }));
     actionRef.current = false;
 
   };
@@ -1941,6 +1951,7 @@ const TowerGame = () => {
         postBirthDays: justBorn ? 0 : (p.postBirthDays||0) + dp,
         bodyHair: newBodyHair,
         bodyHairTrimDay: newBodyHairTrimDay,
+        progress: completeTutorialStep(p.progress, 'rest_once'),
       }, mins);
     });
     const timeLabel = isSleepTillMorning ? '睡到天亮' : `${hours}小時`;
@@ -1988,7 +1999,11 @@ const TowerGame = () => {
       return;
     }
     setShop(makeShop(player.wardrobe, player.shopProgress||{}));
-    setPlayer(p=>({...addMinutes(restockShop(p),15), shopSessionOpen:true}));
+    setPlayer(p=>({
+      ...addMinutes(restockShop(p),15),
+      shopSessionOpen:true,
+      progress: completeTutorialStep(p.progress, 'visit_shop'),
+    }));
     setShopArea('lobby');
     setCart([]);
     setShopDiscount(0);
@@ -2405,8 +2420,13 @@ const TowerGame = () => {
     if (actionRef.current) return;
     actionRef.current = true;
     try {
-      const data = {version:SAVE_VERSION, player, enemy, logs:logs.slice(-50)};
+      const savePlayer = {
+        ...player,
+        progress: completeTutorialStep(player.progress, 'save_once'),
+      };
+      const data = {version:SAVE_VERSION, player:savePlayer, enemy, logs:logs.slice(-50)};
       localStorage.setItem(SAVE_KEY(slot), JSON.stringify(data));
+      setPlayer(savePlayer);
       addLog(`💾 已存入 ${slot}。`,'good');
     } catch {
       // localStorage 寫入可能失敗（沙箱被擋/容量滿）；務必還原 actionRef，否則之後動作會被鎖死
@@ -2418,7 +2438,12 @@ const TowerGame = () => {
   // 存檔升級：未來破壞性結構改動的單一擴充點。目前以 INITIAL_PLAYER 補齊舊檔缺漏欄位（向後相容）
   const migrateSave = (data) => ({
     fromVersion: data.version,
-    player: {...INITIAL_PLAYER, ...(data.player||{})},
+    player: {
+      ...INITIAL_PLAYER,
+      ...(data.player||{}),
+      progress: {...INITIAL_PLAYER.progress, ...(data.player?.progress||{})},
+      relationships: {...INITIAL_PLAYER.relationships, ...(data.player?.relationships||{})},
+    },
     enemy: data.enemy || null,
     // 載入舊存檔時，順手把日誌裡殘留的舊遊戲名「百層塔」更新成現名（避免舊歡迎詞露出）
     logs: (data.logs && data.logs.length>0)
@@ -3777,6 +3802,7 @@ const TowerGame = () => {
   const {total:charmTotal} = calcCharm(player);
   const {title:fameTitle, color:repColor} = getReputationTitle(player.fame||0);
   const endPct = player.hp/player.baseHp*100;
+  const objective = getFirstWeekObjective(player);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center p-2">
@@ -3829,6 +3855,8 @@ const TowerGame = () => {
           </div>
           {player.condoms>0 && <div className="text-xs text-cyan-500 mt-0.5">🛡 保險套 ×{player.condoms}</div>}
         </div>
+
+        <ObjectivePanel objective={objective} />
 
         {/* 動作按鈕區 */}
         <div className="bg-slate-900/60 rounded-xl p-3 border border-slate-800/40">

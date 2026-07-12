@@ -17,6 +17,7 @@ describe('第一週半沙盒進度', () => {
       targetGold: 1200,
       tutorialStep: 0,
       completedMilestones: [],
+      customerVisits: 0,
       resolved: false,
     });
   });
@@ -30,6 +31,13 @@ describe('第一週半沙盒進度', () => {
 
     const advanced = completeTutorialStep(initial, 'meet_first_customer');
     expect(getTutorialStep(advanced)).toEqual(TUTORIAL_STEPS[1]);
+  });
+
+  it('supports saves without an existing progress object', () => {
+    const advanced = completeTutorialStep(undefined, 'meet_first_customer');
+
+    expect(advanced.tutorialStep).toBe(1);
+    expect(advanced.customerVisits).toBe(0);
   });
 
   it('教學結束前優先顯示目前教學目標', () => {

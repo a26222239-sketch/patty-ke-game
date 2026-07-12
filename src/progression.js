@@ -37,6 +37,7 @@ export const createFirstWeekProgress = () => ({
   targetGold: FIRST_WEEK.targetGold,
   tutorialStep: 0,
   completedMilestones: [],
+  customerVisits: 0,
   resolved: false,
 });
 
@@ -54,12 +55,13 @@ export const getTutorialStep = progress => {
 };
 
 export const completeTutorialStep = (progress, stepId) => {
-  const current = getTutorialStep(progress);
-  if (!current || current.id !== stepId) return progress;
+  const base = progress ?? createFirstWeekProgress();
+  const current = getTutorialStep(base);
+  if (!current || current.id !== stepId) return base;
 
   return {
-    ...progress,
-    tutorialStep: (progress.tutorialStep ?? 0) + 1,
+    ...base,
+    tutorialStep: (base.tutorialStep ?? 0) + 1,
   };
 };
 
