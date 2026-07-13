@@ -3874,20 +3874,28 @@ const TowerGame = () => {
           </div>
 
           <section className="px-5 py-6 sm:px-7 sm:py-7" aria-label="目前文本">
-            <div className="mb-3 flex items-center gap-2">
-              <span className="rounded-full bg-rose-950/70 px-2 py-1 text-[10px] font-bold tracking-wider text-rose-200">敘事紀錄</span>
-              <span className={`text-xs ${repColor}`}>{fameTitle}</span>
-            </div>
-            <div className="space-y-4">
-              {narrativeEntries.length > 0 ? narrativeEntries.map((entry, index) => {
-                const { msg, tag } = typeof entry === 'string' ? { msg: entry, tag: 'default' } : entry;
-                const isCurrent = index === narrativeEntries.length - 1;
-                return (
-                  <p key={`${index}-${msg}`} className={`${LOG_COLORS[tag] || LOG_COLORS.default} ${isCurrent ? 'font-serif text-base leading-8 sm:text-lg' : 'text-sm leading-7 opacity-80'}`}>
-                    {msg}
-                  </p>
-                );
-              }) : <p className={`font-serif text-base leading-8 sm:text-lg ${LOG_COLORS[latestTag] || LOG_COLORS.default}`}>{latestMessage || '夜色尚早。先決定柯妤潔接下來要做什麼。'}</p>}
+            <div className="flex items-start gap-4 sm:gap-5">
+              <figure className="w-24 shrink-0 overflow-hidden rounded-xl border border-rose-300/20 bg-[#160d1b] shadow-lg shadow-black/20 sm:w-32">
+                <img src={pickPortrait(player.clothes)} alt="柯妤潔目前服裝立繪" className="h-36 w-full object-contain object-top sm:h-44" />
+                <figcaption className="border-t border-rose-300/15 px-2 py-1.5 text-center text-[10px] font-bold tracking-wider text-rose-200">柯妤潔</figcaption>
+              </figure>
+              <div className="min-w-0 flex-1">
+                <div className="mb-3 flex items-center gap-2">
+                  <span className="rounded-full bg-rose-950/70 px-2 py-1 text-[10px] font-bold tracking-wider text-rose-200">敘事紀錄</span>
+                  <span className={`text-xs ${repColor}`}>{fameTitle}</span>
+                </div>
+                <div className="space-y-4">
+                  {narrativeEntries.length > 0 ? narrativeEntries.map((entry, index) => {
+                    const { msg, tag } = typeof entry === 'string' ? { msg: entry, tag: 'default' } : entry;
+                    const isCurrent = index === narrativeEntries.length - 1;
+                    return (
+                      <p key={`${index}-${msg}`} className={`${LOG_COLORS[tag] || LOG_COLORS.default} ${isCurrent ? 'font-serif text-base leading-8 sm:text-lg' : 'text-sm leading-7 opacity-80'}`}>
+                        {msg}
+                      </p>
+                    );
+                  }) : <p className={`font-serif text-base leading-8 sm:text-lg ${LOG_COLORS[latestTag] || LOG_COLORS.default}`}>{latestMessage || '夜色尚早。先決定柯妤潔接下來要做什麼。'}</p>}
+                </div>
+              </div>
             </div>
           </section>
 
@@ -3920,6 +3928,7 @@ const TowerGame = () => {
       <FirstWeekEventModal
         event={firstWeekEvent}
         shopManagerTrust={shopManagerTrust}
+        portrait={pickPortrait(player.clothes)}
         onChoose={handleFirstWeekChoice}
       />
       <FirstWeekOutcomeModal outcome={firstWeekOutcome} onClose={() => setFirstWeekOutcome(null)} />
