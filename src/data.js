@@ -1,5 +1,5 @@
 // 資料表 — 衣物 / 客人 / 名聲 / 玩家初始狀態（從 game.jsx SECTION 3-4 抽出）
-import { createFirstWeekProgress, createInitialRelationships } from './progression.js';
+import { createFirstWeekFlags, createFirstWeekProgress, createInitialRelationships } from './progression.js';
 
 export const CAT = { top:'上著', bra:'內衣', bottom:'下著', panties:'內褲', socks:'襪子', shoes:'鞋子', ear:'耳環', navel:'肚臍環', areola:'乳環', labia:'陰唇環' };
 export const CAT_KEYS = Object.keys(CAT);
@@ -266,6 +266,7 @@ export const INITIAL_PLAYER = {
   // 半沙盒第一週：章節目標、教學與固定人物關係。
   progress: createFirstWeekProgress(),
   relationships: createInitialRelationships(),
+  flags: createFirstWeekFlags(),
   discountAttemptDay: 0,  // 上次索取折扣的天數（== 當前 days 表示今天已用過機會；0=從未）
   bossSatedDay: 0,        // 老闆肉償爽夠的天數（== 當前 days 表示今天老闆已滿足、不再服務）
   bathSavedClothes: null,

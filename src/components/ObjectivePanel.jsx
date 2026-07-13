@@ -3,6 +3,7 @@ const ObjectivePanel = ({ objective }) => {
 
   const color = {
     tutorial: '#74d3ff',
+    event: '#f08d72',
     weekly_goal: '#f0c850',
     ready_to_resolve: '#74e0a0',
     resolved: '#b8a0e8',

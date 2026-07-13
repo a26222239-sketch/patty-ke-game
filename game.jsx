@@ -426,8 +426,10 @@ import { genEnemy, genBoss, genBossDate, restockShop, makeShop, buildUndressLogs
 import { CAT, CLOTHING_DB, CUPS, SERVICE_NAMES, SERVICE_TO_CLOTHING, PIERCING_NAMES, TATTOO_LOCS, INITIAL_PLAYER } from './src/data.js'; // 資料表（SECTION 3-4 已抽出）
 import { pickPortrait } from './src/portrait.js'; // 立繪系統（已抽出）
 import { LOCATION_ART } from './src/locationArt.js'; // 地點場景立繪登記表
-import { completeTutorialStep, getFirstWeekObjective } from './src/progression.js';
+import { advanceFirstWeekTime, applyFirstWeekChoice, completeTutorialStep, getFirstWeekObjective, getPendingFirstWeekEvent, normalizeFirstWeekPlayer } from './src/progression.js';
 import ObjectivePanel from './src/components/ObjectivePanel.jsx';
+import FirstWeekEventModal from './src/components/FirstWeekEventModal.jsx';
+import FirstWeekOutcomeModal from './src/components/FirstWeekOutcomeModal.jsx';
 // 肉償休息區老闆文本：遵守規則 N（地點+行為），歸在「商店休息區」地點 = shopRest*，
 // 與前台 shop* 區分。下表把娼館池鍵對應到 shopRest* 池；未列入或未填者自動回退娼館文本。
 const BOSS_KEY = {
@@ -1574,6 +1576,7 @@ const TowerGame = () => {
   const [showRestMenu, setShowRestMenu] = useState(false);
   const [showSexMenu, setShowSexMenu] = useState(false);
   const [showForeplayMenu, setShowForeplayMenu] = useState(false);
+  const [firstWeekOutcome, setFirstWeekOutcome] = useState(null);
 
 
   // 體力歸零由 UI 昏倒按鈕觸發（移除 useEffect 避免閉包問題）
@@ -1582,6 +1585,22 @@ const TowerGame = () => {
   const addLog  = (msg, tag='default') => setLogs(l=>{const base=l.length>0&&l[0].tag==='__CLEAR__'?[]:l;const n=[...base,{msg,tag}];return n.length>MAX_LOGS?n.slice(-MAX_LOGS):n;});
   const addLogs = (arr) => setLogs(l=>{const base=l.length>0&&l[0].tag==='__CLEAR__'?[]:l;const n=[...base,...arr.map(([msg,tag='default'])=>({msg,tag}))];return n.length>MAX_LOGS?n.slice(-MAX_LOGS):n;});
   const addSep  = () => setLogs([{msg:'',tag:'__CLEAR__'}]);
+
+  const handleFirstWeekChoice = (choiceId) => {
+    const result = applyFirstWeekChoice(player, choiceId);
+    if (result.blocked) {
+      addLog(`ℹ️ ${result.message}`, 'hint');
+      return;
+    }
+    const nextPlayer = result.timeCost > 0
+      ? advanceFirstWeekTime(result.player, result.timeCost)
+      : result.player;
+    setPlayer(nextPlayer);
+    if (result.message) addLog(result.message, result.outcome ? 'story' : 'good');
+    if (result.outcome) setFirstWeekOutcome(result.outcome);
+    if (choiceId === 'opening_customer') setGs('explore');
+    if (choiceId === 'opening_shop') setGs('street');
+  };
 
 
   // ─────────────────────────────────────────────────────────────────
@@ -2002,7 +2021,10 @@ const TowerGame = () => {
     setPlayer(p=>({
       ...addMinutes(restockShop(p),15),
       shopSessionOpen:true,
-      progress: completeTutorialStep(p.progress, 'visit_shop'),
+      progress: {
+        ...completeTutorialStep(p.progress, 'visit_shop'),
+        shopVisits: (p.progress?.shopVisits || 0) + 1,
+      },
     }));
     setShopArea('lobby');
     setCart([]);
@@ -2438,12 +2460,13 @@ const TowerGame = () => {
   // 存檔升級：未來破壞性結構改動的單一擴充點。目前以 INITIAL_PLAYER 補齊舊檔缺漏欄位（向後相容）
   const migrateSave = (data) => ({
     fromVersion: data.version,
-    player: {
+    player: normalizeFirstWeekPlayer({
       ...INITIAL_PLAYER,
       ...(data.player||{}),
       progress: {...INITIAL_PLAYER.progress, ...(data.player?.progress||{})},
       relationships: {...INITIAL_PLAYER.relationships, ...(data.player?.relationships||{})},
-    },
+      flags: {...INITIAL_PLAYER.flags, ...(data.player?.flags||{})},
+    }),
     enemy: data.enemy || null,
     // 載入舊存檔時，順手把日誌裡殘留的舊遊戲名「百層塔」更新成現名（避免舊歡迎詞露出）
     logs: (data.logs && data.logs.length>0)
@@ -2458,6 +2481,7 @@ const TowerGame = () => {
     setPlayer(s.player);
     setEnemy(s.enemy);
     setLogs(s.logs);
+    setFirstWeekOutcome(null);
     setGs('explore');
     if (s.fromVersion !== SAVE_VERSION) {
       addLog(`ℹ️ 存檔版本 ${s.fromVersion ?? '未知'}（目前 v${SAVE_VERSION}），已自動相容升級。`, 'hint');
@@ -3792,7 +3816,7 @@ const TowerGame = () => {
           )}
           <button onClick={()=>setGs('saveLoad')}
             className="w-full py-2.5 bg-cyan-700 hover:bg-cyan-600 text-white rounded-lg font-bold">📂 讀取／匯入存檔</button>
-          <button onClick={()=>{ setPlayer(JSON.parse(JSON.stringify(INITIAL_PLAYER))); setEnemy(null); setLogs([{msg:'歡迎來到柯妤潔的娼館。',tag:'hint'}]); setGs('explore'); }}
+          <button onClick={()=>{ setPlayer(JSON.parse(JSON.stringify(INITIAL_PLAYER))); setEnemy(null); setFirstWeekOutcome(null); setLogs([{msg:'歡迎來到柯妤潔的娼館。',tag:'hint'}]); setGs('explore'); }}
             className="w-full py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-bold">🆕 開新遊戲</button>
         </div>
       </div>
@@ -3803,6 +3827,8 @@ const TowerGame = () => {
   const {title:fameTitle, color:repColor} = getReputationTitle(player.fame||0);
   const endPct = player.hp/player.baseHp*100;
   const objective = getFirstWeekObjective(player);
+  const firstWeekEvent = getPendingFirstWeekEvent(player);
+  const shopManagerTrust = player.relationships?.shopManager?.trust || 0;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center p-2">
@@ -3872,6 +3898,12 @@ const TowerGame = () => {
           })}
         </div>
       </div>
+      <FirstWeekEventModal
+        event={firstWeekEvent}
+        shopManagerTrust={shopManagerTrust}
+        onChoose={handleFirstWeekChoice}
+      />
+      <FirstWeekOutcomeModal outcome={firstWeekOutcome} onClose={() => setFirstWeekOutcome(null)} />
     </div>
   );
 };
