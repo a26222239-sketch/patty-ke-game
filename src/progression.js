@@ -8,6 +8,11 @@ export const FIRST_WEEK = {
   deadlineDay: 7,
   settlementMinute: 21 * 60,
   targetGold: 1200,
+  bodyRepaymentDiscount: 200,
+  bodyRepaymentHpCost: 35,
+  bodyRepaymentExtensionDays: 3,
+  refusalGoldPenalty: 150,
+  refusalHpCost: 25,
 };
 
 export const FIRST_WEEK_EVENT_IDS = {
@@ -72,6 +77,8 @@ export const createFirstWeekProgress = () => ({
   resolvedEventIds: [],
   pendingEventId: null,
   outcomeId: null,
+  landlordExtensionUsed: false,
+  landlordPressure: 0,
   resolved: false,
 });
 
@@ -153,9 +160,47 @@ const getChoiceText = (eventId, choiceId, key = 'result') => (
 );
 
 const formatFirstWeekText = (template, values) => template.replace(
-  /\{(GOLD|TARGET|TRUST)\}/g,
+  /\{(GOLD|TARGET|TRUST|SHORTFALL|DISCOUNT|NEW_TARGET|DEADLINE|HP_COST|PENALTY)\}/g,
   (_, key) => String(values[key] ?? ''),
 );
+
+const getSettlementTextValues = current => {
+  const progress = current.progress;
+  const gold = current.gold ?? 0;
+  return {
+    GOLD: gold,
+    TARGET: progress.targetGold,
+    TRUST: current.relationships.shopManager.trust,
+    SHORTFALL: Math.max(0, progress.targetGold - gold),
+    DISCOUNT: FIRST_WEEK.bodyRepaymentDiscount,
+    NEW_TARGET: Math.max(0, progress.targetGold - FIRST_WEEK.bodyRepaymentDiscount),
+    DEADLINE: progress.deadlineDay + FIRST_WEEK.bodyRepaymentExtensionDays,
+    HP_COST: FIRST_WEEK.bodyRepaymentHpCost,
+    PENALTY: FIRST_WEEK.refusalGoldPenalty,
+  };
+};
+
+const getSettlementEvent = current => {
+  const text = FIRST_WEEK_TEXTS.events.week_settlement;
+  const values = getSettlementTextValues(current);
+  const paidInFull = (current.gold ?? 0) >= current.progress.targetGold;
+  const choiceIds = paidInFull
+    ? ['settlement_pay']
+    : current.progress.landlordExtensionUsed
+      ? ['settlement_final']
+      : ['settlement_body_extension', 'settlement_refuse'];
+
+  return {
+    id: FIRST_WEEK_EVENT_IDS.settlement,
+    title: text.title,
+    detail: formatFirstWeekText(text.detail, values),
+    choices: choiceIds.map(choiceId => ({
+      id: choiceId,
+      label: text.choices[choiceId].label,
+      hint: formatFirstWeekText(text.choices[choiceId].hint, values),
+    })),
+  };
+};
 
 export const getPendingFirstWeekEvent = player => {
   const current = normalizeFirstWeekPlayer(player);
@@ -165,7 +210,7 @@ export const getPendingFirstWeekEvent = player => {
   const afterDeadline = current.days > progress.deadlineDay
     || (current.days === progress.deadlineDay && current.timeMinutes >= FIRST_WEEK.settlementMinute);
   if (afterDeadline) {
-    return toEvent(FIRST_WEEK_EVENT_IDS.settlement, FIRST_WEEK_TEXTS.events.week_settlement);
+    return getSettlementEvent(current);
   }
 
   if (!isEventResolved(progress, FIRST_WEEK_EVENT_IDS.opening)) return getFirstWeekEvent(FIRST_WEEK_EVENT_IDS.opening);
@@ -220,12 +265,19 @@ export const applyFirstWeekChoice = (player, choiceId) => {
   const current = normalizeFirstWeekPlayer(player);
   const { progress } = current;
   const managerTrust = current.relationships.shopManager.trust;
+  const settlementChoice = choiceId === 'settlement_continue'
+    ? ((current.gold ?? 0) >= progress.targetGold ? 'settlement_pay' : 'settlement_refuse')
+    : choiceId;
 
-  if (choiceId === 'settlement_continue') {
+  if (settlementChoice === 'settlement_pay') {
+    if ((current.gold ?? 0) < progress.targetGold) {
+      return { player: current, timeCost: 0, message: '欠款尚未繳清，不能選擇結清。', effects: [], blocked: true };
+    }
     const outcome = resolveFirstWeek(current, current.relationships);
     return {
       player: {
         ...current,
+        gold: (current.gold ?? 0) - progress.targetGold,
         progress: {
           ...markEventResolved(progress, FIRST_WEEK_EVENT_IDS.settlement),
           phase: 'resolved',
@@ -236,7 +288,67 @@ export const applyFirstWeekChoice = (player, choiceId) => {
       },
       timeCost: 0,
       message: outcome.detail,
-      effects: [],
+      effects: [`gold:-${progress.targetGold}`],
+      outcome,
+    };
+  }
+
+  if (settlementChoice === 'settlement_body_extension') {
+    if ((current.gold ?? 0) >= progress.targetGold || progress.landlordExtensionUsed) {
+      return { player: current, timeCost: 0, message: '這個條件已不適用。', effects: [], blocked: true };
+    }
+    const values = getSettlementTextValues(current);
+    const next = {
+      ...current,
+      hp: Math.max(1, (current.hp ?? current.baseHp ?? 100) - FIRST_WEEK.bodyRepaymentHpCost),
+      progress: {
+        ...markEventResolved(progress, FIRST_WEEK_EVENT_IDS.settlement),
+        phase: 'extension',
+        deadlineDay: progress.deadlineDay + FIRST_WEEK.bodyRepaymentExtensionDays,
+        targetGold: Math.max(0, progress.targetGold - FIRST_WEEK.bodyRepaymentDiscount),
+        landlordExtensionUsed: true,
+        landlordPressure: Math.max(1, progress.landlordPressure || 0),
+      },
+    };
+    return eventResult(next, {
+      message: formatFirstWeekText(FIRST_WEEK_TEXTS.events.week_settlement.choices.settlement_body_extension.result, values),
+      effects: [
+        `hp:-${FIRST_WEEK.bodyRepaymentHpCost}`,
+        `debt:-${FIRST_WEEK.bodyRepaymentDiscount}`,
+        `deadline:+${FIRST_WEEK.bodyRepaymentExtensionDays} days`,
+      ],
+    });
+  }
+
+  if (settlementChoice === 'settlement_refuse' || settlementChoice === 'settlement_final') {
+    const isFinal = settlementChoice === 'settlement_final';
+    const penaltyGold = isFinal ? Math.min(current.gold ?? 0, progress.targetGold) : Math.min(current.gold ?? 0, FIRST_WEEK.refusalGoldPenalty);
+    const hpCost = isFinal ? FIRST_WEEK.bodyRepaymentHpCost : FIRST_WEEK.refusalHpCost;
+    const outcomeText = FIRST_WEEK_TEXTS.outcomes[isFinal ? 'forced_clearance' : 'debt_deepens'];
+    const values = { ...getSettlementTextValues(current), PENALTY: penaltyGold, HP_COST: hpCost };
+    const outcome = {
+      id: isFinal ? 'forced_clearance' : 'debt_deepens',
+      title: outcomeText.title,
+      detail: formatFirstWeekText(outcomeText.detail, values),
+    };
+    return {
+      player: {
+        ...current,
+        gold: Math.max(0, (current.gold ?? 0) - penaltyGold),
+        hp: Math.max(1, (current.hp ?? current.baseHp ?? 100) - hpCost),
+        fame: Math.max(0, (current.fame ?? 0) - (isFinal ? 4 : 2)),
+        progress: {
+          ...markEventResolved(progress, FIRST_WEEK_EVENT_IDS.settlement),
+          phase: 'resolved',
+          resolved: true,
+          outcomeId: outcome.id,
+          landlordPressure: isFinal ? 3 : 2,
+        },
+        flags: { ...current.flags, firstWeekOutcomeSeen: true },
+      },
+      timeCost: 0,
+      message: outcome.detail,
+      effects: [`gold:-${penaltyGold}`, `hp:-${hpCost}`, `fame:-${isFinal ? 4 : 2}`],
       outcome,
     };
   }
@@ -352,6 +464,16 @@ export const getFirstWeekObjective = player => {
       kind: 'tutorial',
       title: tutorial.title,
       detail: tutorial.hint,
+      remainingDays,
+      remainingGold,
+    };
+  }
+
+  if (progress.landlordExtensionUsed) {
+    return {
+      kind: 'extension_goal',
+      title: '延期還債：最後期限',
+      detail: `房東已接受一次身體抵債。現在還需要 ${remainingGold}G，必須在第 ${progress.deadlineDay} 天晚上前繳清；不會再有第二次延期。`,
       remainingDays,
       remainingGold,
     };

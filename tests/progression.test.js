@@ -29,6 +29,8 @@ describe('第一週半沙盒進度', () => {
       resolvedEventIds: [],
       pendingEventId: null,
       outcomeId: null,
+      landlordExtensionUsed: false,
+      landlordPressure: 0,
       resolved: false,
     });
   });
@@ -184,5 +186,41 @@ describe('第一週半沙盒進度', () => {
     expect(result.outcome.id).toBe('independent_start');
     expect(result.player.progress.resolved).toBe(true);
     expect(result.player.progress.outcomeId).toBe('independent_start');
+    expect(result.player.gold).toBe(0);
+  });
+
+  it('欠款未繳清時可用一次身體抵債換取三天延期，並保留實際代價', () => {
+    const player = {
+      days: 7,
+      timeMinutes: FIRST_WEEK.settlementMinute,
+      gold: 300,
+      hp: 100,
+      baseHp: 100,
+      progress: {
+        ...createFirstWeekProgress(),
+        tutorialStep: TUTORIAL_STEPS.length,
+        phase: 'active',
+        resolvedEventIds: [
+          FIRST_WEEK_EVENT_IDS.opening,
+          FIRST_WEEK_EVENT_IDS.shopIntro,
+          FIRST_WEEK_EVENT_IDS.dayThree,
+          FIRST_WEEK_EVENT_IDS.dayFive,
+        ],
+      },
+    };
+
+    const event = getPendingFirstWeekEvent(player);
+    expect(event.choices.map(choice => choice.id)).toEqual(['settlement_body_extension', 'settlement_refuse']);
+
+    const result = applyFirstWeekChoice(player, 'settlement_body_extension');
+    expect(result.player.progress.resolved).toBe(false);
+    expect(result.player.progress.landlordExtensionUsed).toBe(true);
+    expect(result.player.progress.deadlineDay).toBe(10);
+    expect(result.player.progress.targetGold).toBe(1000);
+    expect(result.player.hp).toBe(65);
+    expect(result.effects).toContain('deadline:+3 days');
+
+    const objective = getFirstWeekObjective({ ...result.player, days: 8, timeMinutes: 600 });
+    expect(objective.kind).toBe('extension_goal');
   });
 });
