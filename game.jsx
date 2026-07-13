@@ -3874,12 +3874,8 @@ const TowerGame = () => {
           </div>
 
           <section className="px-5 py-6 sm:px-7 sm:py-7" aria-label="目前文本">
-            <div className="flex items-start gap-4 sm:gap-5">
-              <figure className="w-24 shrink-0 overflow-hidden rounded-xl border border-rose-300/20 bg-[#160d1b] shadow-lg shadow-black/20 sm:w-32">
-                <img src={pickPortrait(player.clothes)} alt="柯妤潔目前服裝立繪" className="h-36 w-full object-contain object-top sm:h-44" />
-                <figcaption className="border-t border-rose-300/15 px-2 py-1.5 text-center text-[10px] font-bold tracking-wider text-rose-200">柯妤潔</figcaption>
-              </figure>
-              <div className="min-w-0 flex-1">
+            <div className="grid gap-6 md:grid-cols-[minmax(230px,0.8fr)_minmax(0,1.2fr)] md:items-stretch">
+              <div className="order-2 min-w-0 md:order-2">
                 <div className="mb-3 flex items-center gap-2">
                   <span className="rounded-full bg-rose-950/70 px-2 py-1 text-[10px] font-bold tracking-wider text-rose-200">敘事紀錄</span>
                   <span className={`text-xs ${repColor}`}>{fameTitle}</span>
@@ -3896,6 +3892,19 @@ const TowerGame = () => {
                   }) : <p className={`font-serif text-base leading-8 sm:text-lg ${LOG_COLORS[latestTag] || LOG_COLORS.default}`}>{latestMessage || '夜色尚早。先決定柯妤潔接下來要做什麼。'}</p>}
                 </div>
               </div>
+              <figure className="relative order-1 isolate min-h-[300px] overflow-hidden rounded-2xl border border-rose-300/25 bg-[radial-gradient(circle_at_50%_18%,#5a3048_0%,#261424_45%,#100d18_100%)] shadow-xl shadow-black/30 md:min-h-[360px]">
+                <div className="absolute inset-0 opacity-60" style={{backgroundImage:'linear-gradient(135deg, rgba(255,255,255,0.08) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.08) 75%, transparent 75%)', backgroundSize:'22px 22px'}} />
+                <img
+                  src={pickPortrait(player.clothes)}
+                  alt="柯妤潔目前服裝立繪"
+                  className="absolute inset-x-0 bottom-0 z-[1] h-full w-full scale-110 object-contain object-bottom brightness-110 contrast-110"
+                />
+                <div className="absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-[#120d18]/75 to-transparent px-4 py-3">
+                  <p className="text-xs font-bold tracking-[0.18em] text-rose-100">柯妤潔</p>
+                  <p className="mt-1 text-[11px] text-rose-200/75">{fameTitle}</p>
+                </div>
+                <figcaption className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-[#100d18] via-[#100d18]/70 to-transparent px-4 pb-4 pt-12 text-xs leading-relaxed text-rose-100/85">角色的服裝會隨目前穿著改變。</figcaption>
+              </figure>
             </div>
           </section>
 
