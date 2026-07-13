@@ -2,13 +2,13 @@
 
 // 1.1 房間按鈕樣式 BR — 地下酒館風格（深紅 / 暗金）
 export const BR = {
-  primary: 'py-2.5 rounded-lg font-bold text-sm transition-all font-serif',
+  primary: 'py-2.5 rounded-lg font-bold text-sm transition-all duration-150 font-serif shadow-md shadow-black/20 hover:-translate-y-0.5 hover:brightness-125 active:translate-y-0 active:brightness-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70',
   primaryStyle: {background:'#2b1605',border:'1px solid #9c7028',borderBottom:'2px solid #bc8a32',color:'#f0d078',textShadow:'0 0 10px rgba(240,200,80,0.3)'},
-  rose:    'py-2.5 rounded-lg font-bold text-sm transition-all font-serif',
+  rose:    'py-2.5 rounded-lg font-bold text-sm transition-all duration-150 font-serif shadow-md shadow-black/20 hover:-translate-y-0.5 hover:brightness-125 active:translate-y-0 active:brightness-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/70',
   roseStyle: {background:'#2c0808',border:'1px solid #802020',borderBottom:'2px solid #a83030',color:'#f08888',textShadow:'0 0 8px rgba(240,80,80,0.25)'},
-  ghost:   'py-2.5 rounded-lg font-bold text-sm transition-all font-serif',
+  ghost:   'py-2.5 rounded-lg font-bold text-sm transition-all duration-150 font-serif hover:-translate-y-0.5 hover:brightness-125 active:translate-y-0 active:brightness-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/45',
   ghostStyle: {background:'#170f04',border:'1px solid #3e2812',borderBottom:'2px solid #4e3420',color:'#8a6c38'},
-  pref:    'py-2.5 rounded-lg font-bold text-sm transition-all font-serif',
+  pref:    'py-2.5 rounded-lg font-bold text-sm transition-all duration-150 font-serif shadow-md shadow-black/20 hover:-translate-y-0.5 hover:brightness-125 active:translate-y-0 active:brightness-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70',
   prefStyle: {background:'#2c0808',border:'1px solid #a87028',borderBottom:'2px solid #c88838',color:'#f0c850'},
   dis:     'py-2.5 rounded-lg font-bold text-sm cursor-not-allowed font-serif',
   disStyle: {background:'#120c04',border:'1px solid #2a1a08',borderBottom:'2px solid #2a1a08',color:'#3a2c14'},

@@ -3829,74 +3829,109 @@ const TowerGame = () => {
   const objective = getFirstWeekObjective(player);
   const firstWeekEvent = getPendingFirstWeekEvent(player);
   const shopManagerTrust = player.relationships?.shopManager?.trust || 0;
+  const sceneByState = {
+    explore: { title: '娼館・大廳', subtitle: '今晚的安排，從這裡開始。', art: LOCATION_ART.brothel },
+    shop: { title: '阿坤的商店', subtitle: '商品、工作與人情，都在這裡談。', art: LOCATION_ART.shop },
+    street: { title: '東區街道', subtitle: '街上的機會與風險一樣多。', art: null },
+    bathroom: { title: '浴室', subtitle: '短暫整理自己，再決定下一步。', art: LOCATION_ART.brothel },
+    wardrobe: { title: '更衣室', subtitle: '換一身行頭，也換一種印象。', art: LOCATION_ART.brothel },
+    status: { title: '角色狀態', subtitle: '整理柯妤潔目前的狀況。', art: LOCATION_ART.brothel },
+    saveLoad: { title: '存讀檔', subtitle: '保留這一刻的選擇。', art: LOCATION_ART.brothel },
+  };
+  const currentScene = sceneByState[gs] || sceneByState.explore;
+  const visibleLogs = logs.filter(entry => (entry.tag || '') !== '__CLEAR__');
+  const latestEntry = visibleLogs[visibleLogs.length - 1];
+  const latestMessage = typeof latestEntry === 'string' ? latestEntry : latestEntry?.msg;
+  const latestTag = typeof latestEntry === 'string' ? 'default' : latestEntry?.tag || 'default';
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center p-2">
-      <div className="w-full max-w-sm flex flex-col gap-3">
-        {/* 標題 */}
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-rose-400">柯妤潔的娼館</h1>
-          <div className="flex justify-center gap-4 mt-1">
-            <span className="text-yellow-200 text-xl font-bold tracking-wide">第 {player.days} 天</span>
-            <span className="text-yellow-400 text-xl font-bold tracking-wide">{formatTime(player.timeMinutes)}</span>
+    <div className="min-h-screen bg-[#090b14] text-slate-200">
+      <div className="mx-auto w-full max-w-6xl px-3 py-4 sm:px-5 sm:py-6">
+        <header className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-rose-300/15 bg-slate-950/90 px-4 py-3 shadow-2xl shadow-black/30">
+          <div>
+            <p className="text-[10px] font-bold tracking-[0.28em] text-rose-300/70">PATTY KE · SEMI-SANDBOX</p>
+            <h1 className="mt-0.5 font-serif text-2xl font-bold tracking-wide text-rose-300">柯妤潔的娼館</h1>
           </div>
-        </div>
+          <div className="flex items-center gap-2 text-sm font-bold">
+            <span className="rounded-full border border-amber-300/25 bg-amber-950/40 px-3 py-1.5 text-amber-100">第 {player.days} 天</span>
+            <span className="rounded-full border border-amber-400/25 bg-slate-900 px-3 py-1.5 text-amber-300">{formatTime(player.timeMinutes)}</span>
+            <span className="rounded-full border border-yellow-400/20 bg-yellow-950/25 px-3 py-1.5 text-yellow-200">💰 {player.gold}G</span>
+          </div>
+        </header>
 
-        {/* 狀態列 */}
-        <div className="bg-slate-900/80 rounded-xl p-3 border border-slate-800/60">
-          <div className="flex justify-between items-start mb-2">
-            <div>
-              <span className="text-rose-300 font-bold text-base">{player.name}</span>
-              {(()=>{
-                const meas = getBodyMeasurements(player);
-                const cup  = getCurrentCup(player);
-                const stage = getPregnancyStage(player);
-                const stageLabel = ['著床期','早期','中期','晚期'][stage];
-                return (
-                  <div className="text-xs text-slate-400 mt-0.5 leading-relaxed">
-                    <span className="text-slate-300">胸 <span className="text-rose-300 font-semibold">{meas.bust}公分，{cup}罩杯</span></span>
-                    <span className="mx-1 text-slate-600">·</span>
-                    <span className="text-slate-300">腰 <span className="text-rose-300 font-semibold">{meas.waist}cm</span></span>
-                    <span className="mx-1 text-slate-600">·</span>
-                    <span className="text-slate-300">臀 <span className="text-rose-300 font-semibold">{meas.hips}cm</span></span>
-                    {player.isPregnant && <div className="text-pink-400 font-semibold mt-0.5">已懷孕{stageLabel}・第{player.pregnantDays}天</div>}
-                    {!player.isPregnant && (player.postBirthDays||0)>0 && (player.postBirthDays||0)<=60 && <div className="text-pink-300 font-semibold mt-0.5">🍼 泌乳期</div>}
-                  </div>
-                );
-              })()}
+        <main className="grid gap-4 lg:grid-cols-[minmax(230px,0.75fr)_minmax(0,1.45fr)_minmax(220px,0.62fr)]">
+          <aside className="relative min-h-[360px] overflow-hidden rounded-2xl border border-rose-300/20 bg-slate-900 shadow-xl shadow-black/25 lg:min-h-[580px]">
+            <div
+              className="absolute inset-0 bg-cover bg-center opacity-45"
+              style={currentScene.art ? { backgroundImage: `linear-gradient(180deg, rgba(8, 9, 18, 0.1), rgba(8, 9, 18, 0.9)), url(${currentScene.art})` } : { background: 'radial-gradient(circle at 50% 0%, #3b1c3e 0%, #111525 45%, #090b14 100%)' }}
+            />
+            <div className="absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-slate-950/90 to-transparent p-4">
+              <p className="text-xs font-bold tracking-wider text-rose-200">柯妤潔</p>
+              <p className={`mt-1 text-xs ${repColor}`}>{fameTitle}</p>
             </div>
-            <span className={`text-xs ${repColor}`}>{fameTitle}</span>
-          </div>
-          <div className="w-full bg-slate-800 rounded-full h-2 mb-1">
-            <div className={S.hpBar} style={{width:`${Math.max(0,endPct)}%`}}/>
-          </div>
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-slate-400 text-xs">體力值 {player.hp}/{player.baseHp}</span>
-            <span className="text-yellow-300 text-2xl font-bold tracking-wide">💰 {player.gold}G</span>
-          </div>
-          <div className={S.rowXs}>
-            <span>✨ 魅惑 {charmTotal}</span>
-            <span>🌟 名氣 {player.fame||0}</span>
-            <button onClick={()=>setGs('status')} className="text-pink-400 hover:text-pink-300 text-xs font-bold">📋 狀態</button>
-          </div>
-          {player.condoms>0 && <div className="text-xs text-cyan-500 mt-0.5">🛡 保險套 ×{player.condoms}</div>}
-        </div>
+            <img
+              src={pickPortrait(player.clothes)}
+              alt="柯妤潔目前的服裝立繪"
+              className="absolute inset-x-0 bottom-0 z-[1] h-[92%] w-full object-contain object-bottom drop-shadow-[0_18px_22px_rgba(0,0,0,0.8)]"
+            />
+            <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent px-4 pb-4 pt-14">
+              <p className="font-serif text-lg font-bold text-rose-100">{player.name}</p>
+              <p className="mt-1 text-xs leading-relaxed text-slate-300">{currentScene.subtitle}</p>
+            </div>
+          </aside>
 
-        <ObjectivePanel objective={objective} />
+          <section className="overflow-hidden rounded-2xl border border-slate-700/70 bg-slate-900/80 shadow-xl shadow-black/20">
+            <div className="border-b border-slate-700/60 bg-slate-950/60 px-5 py-4">
+              <p className="text-[10px] font-bold tracking-[0.22em] text-amber-300/80">CURRENT SCENE</p>
+              <div className="mt-1 flex items-end justify-between gap-3">
+                <h2 className="font-serif text-xl font-bold text-amber-100">{currentScene.title}</h2>
+                <button onClick={()=>setGs('status')} className="rounded-lg border border-rose-400/25 bg-rose-950/30 px-2.5 py-1.5 text-xs font-bold text-rose-200 transition hover:bg-rose-900/50">📋 狀態</button>
+              </div>
+            </div>
+            <div className="p-4 sm:p-5">
+              {renderActions()}
+            </div>
+          </section>
 
-        {/* 動作按鈕區 */}
-        <div className="bg-slate-900/60 rounded-xl p-3 border border-slate-800/40">
-          {renderActions()}
-        </div>
+          <aside className="flex flex-col gap-3">
+            <section className="rounded-2xl border border-slate-700/70 bg-slate-900/80 p-4 shadow-lg shadow-black/15">
+              <div className="mb-2 flex items-center justify-between text-xs">
+                <span className="font-bold text-slate-300">今日狀態</span>
+                <span className="text-slate-500">{player.hp}/{player.baseHp}</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+                <div className={S.hpBar} style={{width:`${Math.max(0,endPct)}%`}}/>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                <div className="rounded-lg bg-slate-950/70 p-2"><span className="block text-slate-500">體力</span><b className="text-slate-100">{player.hp}/{player.baseHp}</b></div>
+                <div className="rounded-lg bg-slate-950/70 p-2"><span className="block text-slate-500">魅惑</span><b className="text-rose-200">{charmTotal}</b></div>
+                <div className="rounded-lg bg-slate-950/70 p-2"><span className="block text-slate-500">名氣</span><b className="text-amber-200">{player.fame||0}</b></div>
+                <div className="rounded-lg bg-slate-950/70 p-2"><span className="block text-slate-500">阿坤信任</span><b className="text-violet-200">{shopManagerTrust}</b></div>
+              </div>
+              {player.condoms > 0 && <p className="mt-3 text-xs text-cyan-300">🛡 保險套 ×{player.condoms}</p>}
+            </section>
+            <ObjectivePanel objective={objective} />
+          </aside>
+        </main>
 
-        {/* 日誌 */}
-        <div className="bg-slate-900/60 rounded-xl p-3 border border-slate-800/40 h-52 overflow-y-auto">
-          {logs.filter(e=>(e.tag||'')!=='__CLEAR__').map((entry,i)=>{
-            const {msg,tag} = typeof entry==='string'?{msg:entry,tag:'default'}:entry;
-            const cls = LOG_COLORS[tag]||LOG_COLORS.default;
-            return <p key={i} className={`text-xs mb-1 leading-relaxed ${cls}`}>{msg}</p>;
-          })}
-        </div>
+        <section className="mt-4 overflow-hidden rounded-2xl border border-rose-300/15 bg-slate-950/90 shadow-xl shadow-black/20">
+          <div className="flex items-center justify-between border-b border-slate-800 px-4 py-2.5">
+            <span className="text-[10px] font-bold tracking-[0.2em] text-rose-300/80">SCENE LOG</span>
+            <span className="text-[10px] text-slate-500">最新事件</span>
+          </div>
+          <div className="px-4 py-4 sm:px-5">
+            <p className={`min-h-[3rem] text-sm leading-7 ${LOG_COLORS[latestTag] || LOG_COLORS.default}`}>{latestMessage || '夜色尚早。先決定柯妤潔接下來要做什麼。'}</p>
+            <details className="mt-3 border-t border-slate-800 pt-3">
+              <summary className="cursor-pointer text-xs font-bold text-slate-400 transition hover:text-rose-200">查看完整事件紀錄</summary>
+              <div className="mt-3 max-h-48 space-y-2 overflow-y-auto pr-1">
+                {visibleLogs.map((entry, i) => {
+                  const { msg, tag } = typeof entry === 'string' ? { msg: entry, tag: 'default' } : entry;
+                  return <p key={i} className={`text-xs leading-relaxed ${LOG_COLORS[tag] || LOG_COLORS.default}`}>{msg}</p>;
+                })}
+              </div>
+            </details>
+          </div>
+        </section>
       </div>
       <FirstWeekEventModal
         event={firstWeekEvent}
