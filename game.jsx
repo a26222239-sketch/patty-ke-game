@@ -427,7 +427,6 @@ import { CAT, CLOTHING_DB, CUPS, SERVICE_NAMES, SERVICE_TO_CLOTHING, PIERCING_NA
 import { pickPortrait } from './src/portrait.js'; // 立繪系統（已抽出）
 import { LOCATION_ART } from './src/locationArt.js'; // 地點場景立繪登記表
 import { advanceFirstWeekTime, applyFirstWeekChoice, completeTutorialStep, getFirstWeekObjective, getPendingFirstWeekEvent, normalizeFirstWeekPlayer } from './src/progression.js';
-import ObjectivePanel from './src/components/ObjectivePanel.jsx';
 import FirstWeekEventModal from './src/components/FirstWeekEventModal.jsx';
 import FirstWeekOutcomeModal from './src/components/FirstWeekOutcomeModal.jsx';
 // 肉償休息區老闆文本：遵守規則 N（地點+行為），歸在「商店休息區」地點 = shopRest*，
@@ -3825,113 +3824,98 @@ const TowerGame = () => {
 
   const {total:charmTotal} = calcCharm(player);
   const {title:fameTitle, color:repColor} = getReputationTitle(player.fame||0);
-  const endPct = player.hp/player.baseHp*100;
   const objective = getFirstWeekObjective(player);
   const firstWeekEvent = getPendingFirstWeekEvent(player);
   const shopManagerTrust = player.relationships?.shopManager?.trust || 0;
   const sceneByState = {
-    explore: { title: '娼館・大廳', subtitle: '今晚的安排，從這裡開始。', art: LOCATION_ART.brothel },
-    shop: { title: '阿坤的商店', subtitle: '商品、工作與人情，都在這裡談。', art: LOCATION_ART.shop },
-    street: { title: '東區街道', subtitle: '街上的機會與風險一樣多。', art: null },
-    bathroom: { title: '浴室', subtitle: '短暫整理自己，再決定下一步。', art: LOCATION_ART.brothel },
-    wardrobe: { title: '更衣室', subtitle: '換一身行頭，也換一種印象。', art: LOCATION_ART.brothel },
-    status: { title: '角色狀態', subtitle: '整理柯妤潔目前的狀況。', art: LOCATION_ART.brothel },
-    saveLoad: { title: '存讀檔', subtitle: '保留這一刻的選擇。', art: LOCATION_ART.brothel },
+    explore: { title: '娼館・大廳', subtitle: '今晚的安排，從這裡開始。' },
+    shop: { title: '阿坤的商店', subtitle: '商品、工作與人情，都在這裡談。' },
+    street: { title: '東區街道', subtitle: '街上的機會與風險一樣多。' },
+    bathroom: { title: '浴室', subtitle: '短暫整理自己，再決定下一步。' },
+    wardrobe: { title: '更衣室', subtitle: '換一身行頭，也換一種印象。' },
+    status: { title: '角色狀態', subtitle: '整理柯妤潔目前的狀況。' },
+    saveLoad: { title: '存讀檔', subtitle: '保留這一刻的選擇。' },
   };
   const currentScene = sceneByState[gs] || sceneByState.explore;
   const visibleLogs = logs.filter(entry => (entry.tag || '') !== '__CLEAR__');
   const latestEntry = visibleLogs[visibleLogs.length - 1];
   const latestMessage = typeof latestEntry === 'string' ? latestEntry : latestEntry?.msg;
   const latestTag = typeof latestEntry === 'string' ? 'default' : latestEntry?.tag || 'default';
+  const narrativeEntries = visibleLogs.slice(-3);
 
   return (
-    <div className="min-h-screen bg-[#090b14] text-slate-200">
-      <div className="mx-auto w-full max-w-6xl px-3 py-4 sm:px-5 sm:py-6">
-        <header className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-rose-300/15 bg-slate-950/90 px-4 py-3 shadow-2xl shadow-black/30">
+    <div className="min-h-screen bg-[#0b0b12] text-slate-200">
+      <div className="mx-auto w-full max-w-3xl px-3 py-4 sm:px-5 sm:py-7">
+        <header className="flex items-center justify-between gap-3 border-b border-rose-300/15 pb-3">
           <div>
-            <p className="text-[10px] font-bold tracking-[0.28em] text-rose-300/70">PATTY KE · SEMI-SANDBOX</p>
-            <h1 className="mt-0.5 font-serif text-2xl font-bold tracking-wide text-rose-300">柯妤潔的娼館</h1>
+            <p className="text-[10px] font-bold tracking-[0.24em] text-rose-300/65">PATTY KE</p>
+            <h1 className="font-serif text-xl font-bold tracking-wide text-rose-200">柯妤潔的娼館</h1>
           </div>
-          <div className="flex items-center gap-2 text-sm font-bold">
-            <span className="rounded-full border border-amber-300/25 bg-amber-950/40 px-3 py-1.5 text-amber-100">第 {player.days} 天</span>
-            <span className="rounded-full border border-amber-400/25 bg-slate-900 px-3 py-1.5 text-amber-300">{formatTime(player.timeMinutes)}</span>
-            <span className="rounded-full border border-yellow-400/20 bg-yellow-950/25 px-3 py-1.5 text-yellow-200">💰 {player.gold}G</span>
-          </div>
+          <span className="text-xs font-bold text-slate-300">第 {player.days} 天・{formatTime(player.timeMinutes)}</span>
         </header>
 
-        <main className="grid gap-4 lg:grid-cols-[minmax(230px,0.75fr)_minmax(0,1.45fr)_minmax(220px,0.62fr)]">
-          <aside className="relative min-h-[360px] overflow-hidden rounded-2xl border border-rose-300/20 bg-slate-900 shadow-xl shadow-black/25 lg:min-h-[580px]">
-            <div
-              className="absolute inset-0 bg-cover bg-center opacity-45"
-              style={currentScene.art ? { backgroundImage: `linear-gradient(180deg, rgba(8, 9, 18, 0.1), rgba(8, 9, 18, 0.9)), url(${currentScene.art})` } : { background: 'radial-gradient(circle at 50% 0%, #3b1c3e 0%, #111525 45%, #090b14 100%)' }}
-            />
-            <div className="absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-slate-950/90 to-transparent p-4">
-              <p className="text-xs font-bold tracking-wider text-rose-200">柯妤潔</p>
-              <p className={`mt-1 text-xs ${repColor}`}>{fameTitle}</p>
+        <section className="mt-3 rounded-xl border border-amber-300/20 bg-amber-950/20 px-4 py-3" aria-label="目前目標">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+            <div className="min-w-0">
+              <span className="mr-2 text-xs font-bold text-amber-300">目前目標</span>
+              <strong className="text-sm text-amber-100">{objective.title}</strong>
             </div>
-            <img
-              src={pickPortrait(player.clothes)}
-              alt="柯妤潔目前的服裝立繪"
-              className="absolute inset-x-0 bottom-0 z-[1] h-[92%] w-full object-contain object-bottom drop-shadow-[0_18px_22px_rgba(0,0,0,0.8)]"
-            />
-            <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent px-4 pb-4 pt-14">
-              <p className="font-serif text-lg font-bold text-rose-100">{player.name}</p>
-              <p className="mt-1 text-xs leading-relaxed text-slate-300">{currentScene.subtitle}</p>
+            <div className="text-xs font-bold text-amber-200">
+              {objective.remainingDays != null && <span>剩 {objective.remainingDays} 天</span>}
+              {objective.remainingGold != null && <span className="ml-3">還差 {objective.remainingGold}G</span>}
             </div>
-          </aside>
+          </div>
+        </section>
 
-          <section className="overflow-hidden rounded-2xl border border-slate-700/70 bg-slate-900/80 shadow-xl shadow-black/20">
-            <div className="border-b border-slate-700/60 bg-slate-950/60 px-5 py-4">
-              <p className="text-[10px] font-bold tracking-[0.22em] text-amber-300/80">CURRENT SCENE</p>
-              <div className="mt-1 flex items-end justify-between gap-3">
-                <h2 className="font-serif text-xl font-bold text-amber-100">{currentScene.title}</h2>
-                <button onClick={()=>setGs('status')} className="rounded-lg border border-rose-400/25 bg-rose-950/30 px-2.5 py-1.5 text-xs font-bold text-rose-200 transition hover:bg-rose-900/50">📋 狀態</button>
-              </div>
+        <main className="mt-4 overflow-hidden rounded-2xl border border-slate-700/70 bg-slate-900/75 shadow-2xl shadow-black/25">
+          <div className="border-b border-slate-700/60 bg-slate-950/45 px-5 py-3">
+            <p className="text-[10px] font-bold tracking-[0.2em] text-rose-300/75">{currentScene.title}</p>
+            <p className="mt-1 text-xs text-slate-400">{currentScene.subtitle}</p>
+          </div>
+
+          <section className="px-5 py-6 sm:px-7 sm:py-7" aria-label="目前文本">
+            <div className="mb-3 flex items-center gap-2">
+              <span className="rounded-full bg-rose-950/70 px-2 py-1 text-[10px] font-bold tracking-wider text-rose-200">敘事紀錄</span>
+              <span className={`text-xs ${repColor}`}>{fameTitle}</span>
             </div>
-            <div className="p-4 sm:p-5">
-              {renderActions()}
+            <div className="space-y-4">
+              {narrativeEntries.length > 0 ? narrativeEntries.map((entry, index) => {
+                const { msg, tag } = typeof entry === 'string' ? { msg: entry, tag: 'default' } : entry;
+                const isCurrent = index === narrativeEntries.length - 1;
+                return (
+                  <p key={`${index}-${msg}`} className={`${LOG_COLORS[tag] || LOG_COLORS.default} ${isCurrent ? 'font-serif text-base leading-8 sm:text-lg' : 'text-sm leading-7 opacity-80'}`}>
+                    {msg}
+                  </p>
+                );
+              }) : <p className={`font-serif text-base leading-8 sm:text-lg ${LOG_COLORS[latestTag] || LOG_COLORS.default}`}>{latestMessage || '夜色尚早。先決定柯妤潔接下來要做什麼。'}</p>}
             </div>
           </section>
 
-          <aside className="flex flex-col gap-3">
-            <section className="rounded-2xl border border-slate-700/70 bg-slate-900/80 p-4 shadow-lg shadow-black/15">
-              <div className="mb-2 flex items-center justify-between text-xs">
-                <span className="font-bold text-slate-300">今日狀態</span>
-                <span className="text-slate-500">{player.hp}/{player.baseHp}</span>
-              </div>
-              <div className="h-2 overflow-hidden rounded-full bg-slate-800">
-                <div className={S.hpBar} style={{width:`${Math.max(0,endPct)}%`}}/>
-              </div>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                <div className="rounded-lg bg-slate-950/70 p-2"><span className="block text-slate-500">體力</span><b className="text-slate-100">{player.hp}/{player.baseHp}</b></div>
-                <div className="rounded-lg bg-slate-950/70 p-2"><span className="block text-slate-500">魅惑</span><b className="text-rose-200">{charmTotal}</b></div>
-                <div className="rounded-lg bg-slate-950/70 p-2"><span className="block text-slate-500">名氣</span><b className="text-amber-200">{player.fame||0}</b></div>
-                <div className="rounded-lg bg-slate-950/70 p-2"><span className="block text-slate-500">阿坤信任</span><b className="text-violet-200">{shopManagerTrust}</b></div>
-              </div>
-              {player.condoms > 0 && <p className="mt-3 text-xs text-cyan-300">🛡 保險套 ×{player.condoms}</p>}
-            </section>
-            <ObjectivePanel objective={objective} />
-          </aside>
+          <section className="border-t border-slate-700/60 bg-slate-950/35 px-4 py-4 sm:px-5" aria-label="可選行動">
+            <p className="mb-3 text-[10px] font-bold tracking-[0.2em] text-amber-300/75">接下來要做什麼？</p>
+            {renderActions()}
+          </section>
         </main>
 
-        <section className="mt-4 overflow-hidden rounded-2xl border border-rose-300/15 bg-slate-950/90 shadow-xl shadow-black/20">
-          <div className="flex items-center justify-between border-b border-slate-800 px-4 py-2.5">
-            <span className="text-[10px] font-bold tracking-[0.2em] text-rose-300/80">SCENE LOG</span>
-            <span className="text-[10px] text-slate-500">最新事件</span>
-          </div>
-          <div className="px-4 py-4 sm:px-5">
-            <p className={`min-h-[3rem] text-sm leading-7 ${LOG_COLORS[latestTag] || LOG_COLORS.default}`}>{latestMessage || '夜色尚早。先決定柯妤潔接下來要做什麼。'}</p>
-            <details className="mt-3 border-t border-slate-800 pt-3">
-              <summary className="cursor-pointer text-xs font-bold text-slate-400 transition hover:text-rose-200">查看完整事件紀錄</summary>
-              <div className="mt-3 max-h-48 space-y-2 overflow-y-auto pr-1">
-                {visibleLogs.map((entry, i) => {
-                  const { msg, tag } = typeof entry === 'string' ? { msg: entry, tag: 'default' } : entry;
-                  return <p key={i} className={`text-xs leading-relaxed ${LOG_COLORS[tag] || LOG_COLORS.default}`}>{msg}</p>;
-                })}
-              </div>
-            </details>
-          </div>
+        <section className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-xs">
+          <span className="text-slate-400">體力 <b className="ml-1 text-slate-100">{player.hp}/{player.baseHp}</b></span>
+          <span className="text-slate-400">魅惑 <b className="ml-1 text-rose-200">{charmTotal}</b></span>
+          <span className="text-slate-400">名氣 <b className="ml-1 text-amber-200">{player.fame||0}</b></span>
+          {player.condoms > 0 && <span className="text-cyan-300">🛡 {player.condoms}</span>}
+          <button onClick={()=>setGs('status')} className="ml-auto rounded-md border border-rose-400/20 px-2.5 py-1 text-xs font-bold text-rose-200 transition hover:bg-rose-950/50">詳細狀態</button>
         </section>
+
+        {visibleLogs.length > narrativeEntries.length && (
+          <details className="mt-3 border-t border-slate-800 pt-3">
+            <summary className="cursor-pointer text-xs font-bold text-slate-500 transition hover:text-rose-200">查看較早的事件紀錄</summary>
+            <div className="mt-3 max-h-52 space-y-2 overflow-y-auto rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+              {visibleLogs.slice(0, -3).map((entry, i) => {
+                const { msg, tag } = typeof entry === 'string' ? { msg: entry, tag: 'default' } : entry;
+                return <p key={`${i}-${msg}`} className={`text-xs leading-relaxed ${LOG_COLORS[tag] || LOG_COLORS.default}`}>{msg}</p>;
+              })}
+            </div>
+          </details>
+        )}
       </div>
       <FirstWeekEventModal
         event={firstWeekEvent}
