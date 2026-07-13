@@ -3842,6 +3842,12 @@ const TowerGame = () => {
   const latestMessage = typeof latestEntry === 'string' ? latestEntry : latestEntry?.msg;
   const latestTag = typeof latestEntry === 'string' ? 'default' : latestEntry?.tag || 'default';
   const narrativeEntries = visibleLogs.slice(-3);
+  const staminaPercent = Math.max(0, Math.min(100, (player.hp / player.baseHp) * 100));
+  const staminaColor = staminaPercent <= 25
+    ? 'bg-red-500'
+    : staminaPercent <= 50
+      ? 'bg-amber-400'
+      : 'bg-emerald-400';
 
   return (
     <div className="min-h-screen bg-[#0b0b12] text-slate-200">
@@ -3851,7 +3857,18 @@ const TowerGame = () => {
             <p className="text-[10px] font-bold tracking-[0.24em] text-rose-300/65">PATTY KE</p>
             <h1 className="font-serif text-xl font-bold tracking-wide text-rose-200">柯妤潔的娼館</h1>
           </div>
-          <span className="text-xs font-bold text-slate-300">第 {player.days} 天・{formatTime(player.timeMinutes)}</span>
+          <div className="flex shrink-0 items-center gap-3 sm:gap-4">
+            <div className="w-24 sm:w-28" aria-label={`柯妤潔體力 ${player.hp}/${player.baseHp}`}>
+              <div className="flex items-center justify-between text-[10px] font-bold">
+                <span className="text-rose-200">體力</span>
+                <span className={staminaPercent <= 25 ? 'text-red-300' : 'text-slate-200'}>{player.hp}/{player.baseHp}</span>
+              </div>
+              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-800">
+                <div className={`h-full rounded-full transition-[width] duration-300 ${staminaColor}`} style={{ width: `${staminaPercent}%` }} />
+              </div>
+            </div>
+            <span className="whitespace-nowrap text-xs font-bold text-slate-300">第 {player.days} 天・{formatTime(player.timeMinutes)}</span>
+          </div>
         </header>
 
         <section className="mt-3 rounded-xl border border-amber-300/20 bg-amber-950/20 px-4 py-3" aria-label="目前目標">
@@ -3873,9 +3890,9 @@ const TowerGame = () => {
             <p className="mt-1 text-xs text-slate-400">{currentScene.subtitle}</p>
           </div>
 
-          <section className="px-5 py-6 sm:px-7 sm:py-7" aria-label="目前文本">
-            <div className="grid gap-6 md:grid-cols-[minmax(230px,0.8fr)_minmax(0,1.2fr)] md:items-stretch">
-              <div className="order-2 min-w-0 md:order-2">
+          <section className="px-5 py-6 sm:px-7 sm:py-7 md:h-[430px]" aria-label="目前文本">
+            <div className="grid gap-6 md:h-full md:grid-cols-[minmax(230px,0.8fr)_minmax(0,1.2fr)] md:items-stretch">
+              <div className="order-2 min-w-0 md:order-2 md:min-h-0 md:overflow-y-auto md:pr-2">
                 <div className="mb-3 flex items-center gap-2">
                   <span className="rounded-full bg-rose-950/70 px-2 py-1 text-[10px] font-bold tracking-wider text-rose-200">敘事紀錄</span>
                   <span className={`text-xs ${repColor}`}>{fameTitle}</span>
@@ -3892,7 +3909,7 @@ const TowerGame = () => {
                   }) : <p className={`font-serif text-base leading-8 sm:text-lg ${LOG_COLORS[latestTag] || LOG_COLORS.default}`}>{latestMessage || '夜色尚早。先決定柯妤潔接下來要做什麼。'}</p>}
                 </div>
               </div>
-              <figure className="relative order-1 isolate min-h-[300px] overflow-hidden rounded-2xl border border-rose-300/25 bg-[radial-gradient(circle_at_50%_18%,#5a3048_0%,#261424_45%,#100d18_100%)] shadow-xl shadow-black/30 md:min-h-[360px]">
+              <figure className="relative order-1 isolate min-h-[300px] overflow-hidden rounded-2xl border border-rose-300/25 bg-[radial-gradient(circle_at_50%_18%,#5a3048_0%,#261424_45%,#100d18_100%)] shadow-xl shadow-black/30 md:h-full md:min-h-0">
                 <div className="absolute inset-0 opacity-60" style={{backgroundImage:'linear-gradient(135deg, rgba(255,255,255,0.08) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.08) 75%, transparent 75%)', backgroundSize:'22px 22px'}} />
                 <img
                   src={pickPortrait(player.clothes)}
@@ -3908,14 +3925,13 @@ const TowerGame = () => {
             </div>
           </section>
 
-          <section className="border-t border-slate-700/60 bg-slate-950/35 px-4 py-4 sm:px-5" aria-label="可選行動">
+          <section className="min-h-[250px] border-t border-slate-700/60 bg-slate-950/35 px-4 py-4 sm:px-5" aria-label="可選行動">
             <p className="mb-3 text-[10px] font-bold tracking-[0.2em] text-amber-300/75">接下來要做什麼？</p>
             {renderActions()}
           </section>
         </main>
 
         <section className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-xs">
-          <span className="text-slate-400">體力 <b className="ml-1 text-slate-100">{player.hp}/{player.baseHp}</b></span>
           <span className="text-slate-400">魅惑 <b className="ml-1 text-rose-200">{charmTotal}</b></span>
           <span className="text-slate-400">名氣 <b className="ml-1 text-amber-200">{player.fame||0}</b></span>
           {player.condoms > 0 && <span className="text-cyan-300">🛡 {player.condoms}</span>}
