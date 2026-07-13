@@ -13,6 +13,7 @@ import {
   normalizeFirstWeekPlayer,
   resolveFirstWeek,
 } from '../src/progression.js';
+import { FIRST_WEEK_TEXTS } from '../texts.js';
 
 describe('第一週半沙盒進度', () => {
   it('建立可存檔的第一週預設進度', () => {
@@ -149,6 +150,22 @@ describe('第一週半沙盒進度', () => {
     expect(result.player.gold).toBe(70);
     expect(result.player.relationships.shopManager.trust).toBe(1);
     expect(result.effects).toContain('shopManager.trust:+1');
+    expect(result.message).toBe(FIRST_WEEK_TEXTS.events.shop_manager_day_three.choices.day3_help.result);
+  });
+
+  it('事件與結算文本來自共用文本庫，並代入本局數值', () => {
+    const event = getPendingFirstWeekEvent({
+      days: 1,
+      timeMinutes: 0,
+      progress: createFirstWeekProgress(),
+    });
+    const outcome = resolveFirstWeek(
+      { gold: FIRST_WEEK.targetGold, progress: createFirstWeekProgress() },
+      { shopManager: { trust: 0 } },
+    );
+
+    expect(event.detail).toBe(FIRST_WEEK_TEXTS.events.opening_notice.detail);
+    expect(outcome.detail).toContain(`${FIRST_WEEK.targetGold}G`);
   });
 
   it('結算選項會固定結果並結束第一週', () => {
