@@ -30,7 +30,9 @@ export const pickTierByReputation = fame => {
 };
 
 export const genEnemy = (player) => {
-  const tierIdx = pickTierByReputation(player.fame||0);
+  // 新手前三位客人固定為 Tier 1，讓玩家先理解核心操作。
+  const customerVisits = player.progress?.customerVisits || 0;
+  const tierIdx = customerVisits < 3 ? 0 : pickTierByReputation(player.fame||0);
   const tier = ENEMY_TIERS[tierIdx];
   const name = pick(tier.names);
   const rep = player.fame||0;

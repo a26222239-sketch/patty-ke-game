@@ -426,6 +426,9 @@ import { genEnemy, genBoss, genBossDate, restockShop, makeShop, buildUndressLogs
 import { CAT, CLOTHING_DB, CUPS, SERVICE_NAMES, SERVICE_TO_CLOTHING, PIERCING_NAMES, TATTOO_LOCS, INITIAL_PLAYER } from './src/data.js'; // 資料表（SECTION 3-4 已抽出）
 import { pickPortrait } from './src/portrait.js'; // 立繪系統（已抽出）
 import { LOCATION_ART } from './src/locationArt.js'; // 地點場景立繪登記表
+import { advanceFirstWeekTime, applyFirstWeekChoice, completeTutorialStep, getFirstWeekObjective, getPendingFirstWeekEvent, normalizeFirstWeekPlayer } from './src/progression.js';
+import FirstWeekEventModal from './src/components/FirstWeekEventModal.jsx';
+import FirstWeekOutcomeModal from './src/components/FirstWeekOutcomeModal.jsx';
 // 肉償休息區老闆文本：遵守規則 N（地點+行為），歸在「商店休息區」地點 = shopRest*，
 // 與前台 shop* 區分。下表把娼館池鍵對應到 shopRest* 池；未列入或未填者自動回退娼館文本。
 const BOSS_KEY = {
@@ -1572,6 +1575,7 @@ const TowerGame = () => {
   const [showRestMenu, setShowRestMenu] = useState(false);
   const [showSexMenu, setShowSexMenu] = useState(false);
   const [showForeplayMenu, setShowForeplayMenu] = useState(false);
+  const [firstWeekOutcome, setFirstWeekOutcome] = useState(null);
 
 
   // 體力歸零由 UI 昏倒按鈕觸發（移除 useEffect 避免閉包問題）
@@ -1580,6 +1584,22 @@ const TowerGame = () => {
   const addLog  = (msg, tag='default') => setLogs(l=>{const base=l.length>0&&l[0].tag==='__CLEAR__'?[]:l;const n=[...base,{msg,tag}];return n.length>MAX_LOGS?n.slice(-MAX_LOGS):n;});
   const addLogs = (arr) => setLogs(l=>{const base=l.length>0&&l[0].tag==='__CLEAR__'?[]:l;const n=[...base,...arr.map(([msg,tag='default'])=>({msg,tag}))];return n.length>MAX_LOGS?n.slice(-MAX_LOGS):n;});
   const addSep  = () => setLogs([{msg:'',tag:'__CLEAR__'}]);
+
+  const handleFirstWeekChoice = (choiceId) => {
+    const result = applyFirstWeekChoice(player, choiceId);
+    if (result.blocked) {
+      addLog(`ℹ️ ${result.message}`, 'hint');
+      return;
+    }
+    const nextPlayer = result.timeCost > 0
+      ? advanceFirstWeekTime(result.player, result.timeCost)
+      : result.player;
+    setPlayer(nextPlayer);
+    if (result.message) addLog(result.message, result.outcome ? 'story' : 'good');
+    if (result.outcome) setFirstWeekOutcome(result.outcome);
+    if (choiceId === 'opening_customer') setGs('explore');
+    if (choiceId === 'opening_shop') setGs('street');
+  };
 
 
   // ─────────────────────────────────────────────────────────────────
@@ -1834,6 +1854,14 @@ const TowerGame = () => {
       }
     }
     setEnemy(newEnemy);
+    setPlayer(p => ({
+      ...p,
+      progress: {
+        ...(p.progress || {}),
+        ...completeTutorialStep(p.progress, 'meet_first_customer'),
+        customerVisits: (p.progress?.customerVisits || 0) + 1,
+      },
+    }));
     actionRef.current = false;
 
   };
@@ -1941,6 +1969,7 @@ const TowerGame = () => {
         postBirthDays: justBorn ? 0 : (p.postBirthDays||0) + dp,
         bodyHair: newBodyHair,
         bodyHairTrimDay: newBodyHairTrimDay,
+        progress: completeTutorialStep(p.progress, 'rest_once'),
       }, mins);
     });
     const timeLabel = isSleepTillMorning ? '睡到天亮' : `${hours}小時`;
@@ -1988,7 +2017,14 @@ const TowerGame = () => {
       return;
     }
     setShop(makeShop(player.wardrobe, player.shopProgress||{}));
-    setPlayer(p=>({...addMinutes(restockShop(p),15), shopSessionOpen:true}));
+    setPlayer(p=>({
+      ...addMinutes(restockShop(p),15),
+      shopSessionOpen:true,
+      progress: {
+        ...completeTutorialStep(p.progress, 'visit_shop'),
+        shopVisits: (p.progress?.shopVisits || 0) + 1,
+      },
+    }));
     setShopArea('lobby');
     setCart([]);
     setShopDiscount(0);
@@ -2405,8 +2441,13 @@ const TowerGame = () => {
     if (actionRef.current) return;
     actionRef.current = true;
     try {
-      const data = {version:SAVE_VERSION, player, enemy, logs:logs.slice(-50)};
+      const savePlayer = {
+        ...player,
+        progress: completeTutorialStep(player.progress, 'save_once'),
+      };
+      const data = {version:SAVE_VERSION, player:savePlayer, enemy, logs:logs.slice(-50)};
       localStorage.setItem(SAVE_KEY(slot), JSON.stringify(data));
+      setPlayer(savePlayer);
       addLog(`💾 已存入 ${slot}。`,'good');
     } catch {
       // localStorage 寫入可能失敗（沙箱被擋/容量滿）；務必還原 actionRef，否則之後動作會被鎖死
@@ -2418,7 +2459,13 @@ const TowerGame = () => {
   // 存檔升級：未來破壞性結構改動的單一擴充點。目前以 INITIAL_PLAYER 補齊舊檔缺漏欄位（向後相容）
   const migrateSave = (data) => ({
     fromVersion: data.version,
-    player: {...INITIAL_PLAYER, ...(data.player||{})},
+    player: normalizeFirstWeekPlayer({
+      ...INITIAL_PLAYER,
+      ...(data.player||{}),
+      progress: {...INITIAL_PLAYER.progress, ...(data.player?.progress||{})},
+      relationships: {...INITIAL_PLAYER.relationships, ...(data.player?.relationships||{})},
+      flags: {...INITIAL_PLAYER.flags, ...(data.player?.flags||{})},
+    }),
     enemy: data.enemy || null,
     // 載入舊存檔時，順手把日誌裡殘留的舊遊戲名「百層塔」更新成現名（避免舊歡迎詞露出）
     logs: (data.logs && data.logs.length>0)
@@ -2433,6 +2480,7 @@ const TowerGame = () => {
     setPlayer(s.player);
     setEnemy(s.enemy);
     setLogs(s.logs);
+    setFirstWeekOutcome(null);
     setGs('explore');
     if (s.fromVersion !== SAVE_VERSION) {
       addLog(`ℹ️ 存檔版本 ${s.fromVersion ?? '未知'}（目前 v${SAVE_VERSION}），已自動相容升級。`, 'hint');
@@ -3767,7 +3815,7 @@ const TowerGame = () => {
           )}
           <button onClick={()=>setGs('saveLoad')}
             className="w-full py-2.5 bg-cyan-700 hover:bg-cyan-600 text-white rounded-lg font-bold">📂 讀取／匯入存檔</button>
-          <button onClick={()=>{ setPlayer(JSON.parse(JSON.stringify(INITIAL_PLAYER))); setEnemy(null); setLogs([{msg:'歡迎來到柯妤潔的娼館。',tag:'hint'}]); setGs('explore'); }}
+          <button onClick={()=>{ setPlayer(JSON.parse(JSON.stringify(INITIAL_PLAYER))); setEnemy(null); setFirstWeekOutcome(null); setLogs([{msg:'歡迎來到柯妤潔的娼館。',tag:'hint'}]); setGs('explore'); }}
             className="w-full py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-bold">🆕 開新遊戲</button>
         </div>
       </div>
@@ -3776,74 +3824,139 @@ const TowerGame = () => {
 
   const {total:charmTotal} = calcCharm(player);
   const {title:fameTitle, color:repColor} = getReputationTitle(player.fame||0);
-  const endPct = player.hp/player.baseHp*100;
+  const objective = getFirstWeekObjective(player);
+  const firstWeekEvent = getPendingFirstWeekEvent(player);
+  const shopManagerTrust = player.relationships?.shopManager?.trust || 0;
+  const sceneByState = {
+    explore: { title: '娼館・大廳', subtitle: '今晚的安排，從這裡開始。' },
+    shop: { title: '阿坤的商店', subtitle: '商品、工作與人情，都在這裡談。' },
+    street: { title: '東區街道', subtitle: '街上的機會與風險一樣多。' },
+    bathroom: { title: '浴室', subtitle: '短暫整理自己，再決定下一步。' },
+    wardrobe: { title: '更衣室', subtitle: '換一身行頭，也換一種印象。' },
+    status: { title: '角色狀態', subtitle: '整理柯妤潔目前的狀況。' },
+    saveLoad: { title: '存讀檔', subtitle: '保留這一刻的選擇。' },
+  };
+  const currentScene = sceneByState[gs] || sceneByState.explore;
+  const visibleLogs = logs.filter(entry => (entry.tag || '') !== '__CLEAR__');
+  const latestEntry = visibleLogs[visibleLogs.length - 1];
+  const latestMessage = typeof latestEntry === 'string' ? latestEntry : latestEntry?.msg;
+  const latestTag = typeof latestEntry === 'string' ? 'default' : latestEntry?.tag || 'default';
+  const narrativeEntries = visibleLogs.slice(-3);
+  const staminaPercent = Math.max(0, Math.min(100, (player.hp / player.baseHp) * 100));
+  const staminaColor = staminaPercent <= 25
+    ? 'bg-red-500'
+    : staminaPercent <= 50
+      ? 'bg-amber-400'
+      : 'bg-emerald-400';
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center p-2">
-      <div className="w-full max-w-sm flex flex-col gap-3">
-        {/* 標題 */}
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-rose-400">柯妤潔的娼館</h1>
-          <div className="flex justify-center gap-4 mt-1">
-            <span className="text-yellow-200 text-xl font-bold tracking-wide">第 {player.days} 天</span>
-            <span className="text-yellow-400 text-xl font-bold tracking-wide">{formatTime(player.timeMinutes)}</span>
+    <div className="min-h-screen bg-[#0b0b12] text-slate-200">
+      <div className="mx-auto w-full max-w-3xl px-3 py-4 sm:px-5 sm:py-7">
+        <header className="flex items-center justify-between gap-3 border-b border-rose-300/15 pb-3">
+          <div>
+            <p className="text-[10px] font-bold tracking-[0.24em] text-rose-300/65">PATTY KE</p>
+            <h1 className="font-serif text-xl font-bold tracking-wide text-rose-200">柯妤潔的娼館</h1>
           </div>
-        </div>
-
-        {/* 狀態列 */}
-        <div className="bg-slate-900/80 rounded-xl p-3 border border-slate-800/60">
-          <div className="flex justify-between items-start mb-2">
-            <div>
-              <span className="text-rose-300 font-bold text-base">{player.name}</span>
-              {(()=>{
-                const meas = getBodyMeasurements(player);
-                const cup  = getCurrentCup(player);
-                const stage = getPregnancyStage(player);
-                const stageLabel = ['著床期','早期','中期','晚期'][stage];
-                return (
-                  <div className="text-xs text-slate-400 mt-0.5 leading-relaxed">
-                    <span className="text-slate-300">胸 <span className="text-rose-300 font-semibold">{meas.bust}公分，{cup}罩杯</span></span>
-                    <span className="mx-1 text-slate-600">·</span>
-                    <span className="text-slate-300">腰 <span className="text-rose-300 font-semibold">{meas.waist}cm</span></span>
-                    <span className="mx-1 text-slate-600">·</span>
-                    <span className="text-slate-300">臀 <span className="text-rose-300 font-semibold">{meas.hips}cm</span></span>
-                    {player.isPregnant && <div className="text-pink-400 font-semibold mt-0.5">已懷孕{stageLabel}・第{player.pregnantDays}天</div>}
-                    {!player.isPregnant && (player.postBirthDays||0)>0 && (player.postBirthDays||0)<=60 && <div className="text-pink-300 font-semibold mt-0.5">🍼 泌乳期</div>}
-                  </div>
-                );
-              })()}
+          <div className="flex shrink-0 items-center gap-3 sm:gap-4">
+            <div className="w-24 sm:w-28" aria-label={`柯妤潔體力 ${player.hp}/${player.baseHp}`}>
+              <div className="flex items-center justify-between text-[10px] font-bold">
+                <span className="text-rose-200">體力</span>
+                <span className={staminaPercent <= 25 ? 'text-red-300' : 'text-slate-200'}>{player.hp}/{player.baseHp}</span>
+              </div>
+              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-800">
+                <div className={`h-full rounded-full transition-[width] duration-300 ${staminaColor}`} style={{ width: `${staminaPercent}%` }} />
+              </div>
             </div>
-            <span className={`text-xs ${repColor}`}>{fameTitle}</span>
+            <span className="whitespace-nowrap text-xs font-bold text-slate-300">第 {player.days} 天・{formatTime(player.timeMinutes)}</span>
           </div>
-          <div className="w-full bg-slate-800 rounded-full h-2 mb-1">
-            <div className={S.hpBar} style={{width:`${Math.max(0,endPct)}%`}}/>
-          </div>
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-slate-400 text-xs">體力值 {player.hp}/{player.baseHp}</span>
-            <span className="text-yellow-300 text-2xl font-bold tracking-wide">💰 {player.gold}G</span>
-          </div>
-          <div className={S.rowXs}>
-            <span>✨ 魅惑 {charmTotal}</span>
-            <span>🌟 名氣 {player.fame||0}</span>
-            <button onClick={()=>setGs('status')} className="text-pink-400 hover:text-pink-300 text-xs font-bold">📋 狀態</button>
-          </div>
-          {player.condoms>0 && <div className="text-xs text-cyan-500 mt-0.5">🛡 保險套 ×{player.condoms}</div>}
-        </div>
+        </header>
 
-        {/* 動作按鈕區 */}
-        <div className="bg-slate-900/60 rounded-xl p-3 border border-slate-800/40">
-          {renderActions()}
-        </div>
+        <section className="mt-3 rounded-xl border border-amber-300/20 bg-amber-950/20 px-4 py-3" aria-label="目前目標">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+            <div className="min-w-0">
+              <span className="mr-2 text-xs font-bold text-amber-300">目前目標</span>
+              <strong className="text-sm text-amber-100">{objective.title}</strong>
+            </div>
+            <div className="text-xs font-bold text-amber-200">
+              {objective.remainingDays != null && <span>剩 {objective.remainingDays} 天</span>}
+              {objective.remainingGold != null && <span className="ml-3">還差 {objective.remainingGold}G</span>}
+            </div>
+          </div>
+        </section>
 
-        {/* 日誌 */}
-        <div className="bg-slate-900/60 rounded-xl p-3 border border-slate-800/40 h-52 overflow-y-auto">
-          {logs.filter(e=>(e.tag||'')!=='__CLEAR__').map((entry,i)=>{
-            const {msg,tag} = typeof entry==='string'?{msg:entry,tag:'default'}:entry;
-            const cls = LOG_COLORS[tag]||LOG_COLORS.default;
-            return <p key={i} className={`text-xs mb-1 leading-relaxed ${cls}`}>{msg}</p>;
-          })}
-        </div>
+        <main className="mt-4 overflow-hidden rounded-2xl border border-slate-700/70 bg-slate-900/75 shadow-2xl shadow-black/25">
+          <div className="border-b border-slate-700/60 bg-slate-950/45 px-5 py-3">
+            <p className="text-[10px] font-bold tracking-[0.2em] text-rose-300/75">{currentScene.title}</p>
+            <p className="mt-1 text-xs text-slate-400">{currentScene.subtitle}</p>
+          </div>
+
+          <section className="px-5 py-6 sm:px-7 sm:py-7 md:h-[430px]" aria-label="目前文本">
+            <div className="grid gap-6 md:h-full md:grid-cols-[minmax(230px,0.8fr)_minmax(0,1.2fr)] md:items-stretch">
+              <div className="order-2 min-w-0 md:order-2 md:min-h-0 md:overflow-y-auto md:pr-2">
+                <div className="mb-3 flex items-center gap-2">
+                  <span className="rounded-full bg-rose-950/70 px-2 py-1 text-[10px] font-bold tracking-wider text-rose-200">敘事紀錄</span>
+                  <span className={`text-xs ${repColor}`}>{fameTitle}</span>
+                </div>
+                <div className="space-y-4">
+                  {narrativeEntries.length > 0 ? narrativeEntries.map((entry, index) => {
+                    const { msg, tag } = typeof entry === 'string' ? { msg: entry, tag: 'default' } : entry;
+                    const isCurrent = index === narrativeEntries.length - 1;
+                    return (
+                      <p key={`${index}-${msg}`} className={`${LOG_COLORS[tag] || LOG_COLORS.default} ${isCurrent ? 'font-serif text-base leading-8 sm:text-lg' : 'text-sm leading-7 opacity-80'}`}>
+                        {msg}
+                      </p>
+                    );
+                  }) : <p className={`font-serif text-base leading-8 sm:text-lg ${LOG_COLORS[latestTag] || LOG_COLORS.default}`}>{latestMessage || '夜色尚早。先決定柯妤潔接下來要做什麼。'}</p>}
+                </div>
+              </div>
+              <figure className="relative order-1 isolate min-h-[300px] overflow-hidden rounded-2xl border border-rose-300/25 bg-[radial-gradient(circle_at_50%_18%,#5a3048_0%,#261424_45%,#100d18_100%)] shadow-xl shadow-black/30 md:h-full md:min-h-0">
+                <div className="absolute inset-0 opacity-60" style={{backgroundImage:'linear-gradient(135deg, rgba(255,255,255,0.08) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.08) 75%, transparent 75%)', backgroundSize:'22px 22px'}} />
+                <img
+                  src={pickPortrait(player.clothes)}
+                  alt="柯妤潔目前服裝立繪"
+                  className="absolute inset-x-0 bottom-0 z-[1] h-full w-full scale-110 object-contain object-bottom brightness-110 contrast-110"
+                />
+                <div className="absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-[#120d18]/75 to-transparent px-4 py-3">
+                  <p className="text-xs font-bold tracking-[0.18em] text-rose-100">柯妤潔</p>
+                  <p className="mt-1 text-[11px] text-rose-200/75">{fameTitle}</p>
+                </div>
+                <figcaption className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-[#100d18] via-[#100d18]/70 to-transparent px-4 pb-4 pt-12 text-xs leading-relaxed text-rose-100/85">角色的服裝會隨目前穿著改變。</figcaption>
+              </figure>
+            </div>
+          </section>
+
+          <section className="min-h-[250px] border-t border-slate-700/60 bg-slate-950/35 px-4 py-4 sm:px-5" aria-label="可選行動">
+            <p className="mb-3 text-[10px] font-bold tracking-[0.2em] text-amber-300/75">接下來要做什麼？</p>
+            {renderActions()}
+          </section>
+        </main>
+
+        <section className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-xs">
+          <span className="text-slate-400">魅惑 <b className="ml-1 text-rose-200">{charmTotal}</b></span>
+          <span className="text-slate-400">名氣 <b className="ml-1 text-amber-200">{player.fame||0}</b></span>
+          {player.condoms > 0 && <span className="text-cyan-300">🛡 {player.condoms}</span>}
+          <button onClick={()=>setGs('status')} className="ml-auto rounded-md border border-rose-400/20 px-2.5 py-1 text-xs font-bold text-rose-200 transition hover:bg-rose-950/50">詳細狀態</button>
+        </section>
+
+        {visibleLogs.length > narrativeEntries.length && (
+          <details className="mt-3 border-t border-slate-800 pt-3">
+            <summary className="cursor-pointer text-xs font-bold text-slate-500 transition hover:text-rose-200">查看較早的事件紀錄</summary>
+            <div className="mt-3 max-h-52 space-y-2 overflow-y-auto rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+              {visibleLogs.slice(0, -3).map((entry, i) => {
+                const { msg, tag } = typeof entry === 'string' ? { msg: entry, tag: 'default' } : entry;
+                return <p key={`${i}-${msg}`} className={`text-xs leading-relaxed ${LOG_COLORS[tag] || LOG_COLORS.default}`}>{msg}</p>;
+              })}
+            </div>
+          </details>
+        )}
       </div>
+      <FirstWeekEventModal
+        event={firstWeekEvent}
+        shopManagerTrust={shopManagerTrust}
+        portrait={pickPortrait(player.clothes)}
+        onChoose={handleFirstWeekChoice}
+      />
+      <FirstWeekOutcomeModal outcome={firstWeekOutcome} onClose={() => setFirstWeekOutcome(null)} />
     </div>
   );
 };
