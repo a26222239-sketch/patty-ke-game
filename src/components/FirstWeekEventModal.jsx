@@ -1,4 +1,8 @@
+import { useState } from 'react';
+import TypewriterText from './TypewriterText.jsx';
+
 const FirstWeekEventModal = ({ event, shopManagerTrust = 0, portrait, onChoose }) => {
+  const [detailComplete, setDetailComplete] = useState(false);
   if (!event) return null;
 
   return (
@@ -17,8 +21,15 @@ const FirstWeekEventModal = ({ event, shopManagerTrust = 0, portrait, onChoose }
           )}
         </div>
         <h2 className="text-xl font-bold text-amber-100">{event.title}</h2>
-        <p className="mt-3 text-sm leading-7 text-slate-200">{event.detail}</p>
-        <div className="mt-5 space-y-2">
+        <TypewriterText
+          key={event.id}
+          text={event.detail}
+          speed={16}
+          onComplete={() => setDetailComplete(true)}
+          className="mt-3 text-sm leading-7 text-slate-200"
+        />
+        {!detailComplete && <p className="mt-2 text-xs text-slate-500">點擊文字可立即顯示全文</p>}
+        <div className={`mt-5 space-y-2 transition-opacity ${detailComplete ? 'opacity-100' : 'pointer-events-none opacity-35'}`}>
           {event.choices.map(choice => {
             const unavailable = choice.requiresShopManagerTrust && shopManagerTrust < choice.requiresShopManagerTrust;
             return (

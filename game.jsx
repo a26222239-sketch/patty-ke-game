@@ -429,6 +429,8 @@ import { LOCATION_ART } from './src/locationArt.js'; // 地點場景立繪登記
 import { advanceFirstWeekTime, applyFirstWeekChoice, completeTutorialStep, getFirstWeekObjective, getPendingFirstWeekEvent, normalizeFirstWeekPlayer } from './src/progression.js';
 import FirstWeekEventModal from './src/components/FirstWeekEventModal.jsx';
 import FirstWeekOutcomeModal from './src/components/FirstWeekOutcomeModal.jsx';
+import OpeningPrologueModal from './src/components/OpeningPrologueModal.jsx';
+import TypewriterText from './src/components/TypewriterText.jsx';
 // 肉償休息區老闆文本：遵守規則 N（地點+行為），歸在「商店休息區」地點 = shopRest*，
 // 與前台 shop* 區分。下表把娼館池鍵對應到 shopRest* 池；未列入或未填者自動回退娼館文本。
 const BOSS_KEY = {
@@ -1576,6 +1578,7 @@ const TowerGame = () => {
   const [showSexMenu, setShowSexMenu] = useState(false);
   const [showForeplayMenu, setShowForeplayMenu] = useState(false);
   const [firstWeekOutcome, setFirstWeekOutcome] = useState(null);
+  const [showPrologue, setShowPrologue] = useState(false);
 
 
   // 體力歸零由 UI 昏倒按鈕觸發（移除 useEffect 避免閉包問題）
@@ -1584,6 +1587,15 @@ const TowerGame = () => {
   const addLog  = (msg, tag='default') => setLogs(l=>{const base=l.length>0&&l[0].tag==='__CLEAR__'?[]:l;const n=[...base,{msg,tag}];return n.length>MAX_LOGS?n.slice(-MAX_LOGS):n;});
   const addLogs = (arr) => setLogs(l=>{const base=l.length>0&&l[0].tag==='__CLEAR__'?[]:l;const n=[...base,...arr.map(([msg,tag='default'])=>({msg,tag}))];return n.length>MAX_LOGS?n.slice(-MAX_LOGS):n;});
   const addSep  = () => setLogs([{msg:'',tag:'__CLEAR__'}]);
+
+  const startNewGame = () => {
+    setPlayer(JSON.parse(JSON.stringify(INITIAL_PLAYER)));
+    setEnemy(null);
+    setFirstWeekOutcome(null);
+    setLogs([{msg:'夜裡的房間安靜得只剩下自己的呼吸聲。',tag:'story'}]);
+    setGs('explore');
+    setShowPrologue(true);
+  };
 
   const handleFirstWeekChoice = (choiceId) => {
     const result = applyFirstWeekChoice(player, choiceId);
@@ -3815,7 +3827,7 @@ const TowerGame = () => {
           )}
           <button onClick={()=>setGs('saveLoad')}
             className="w-full py-2.5 bg-cyan-700 hover:bg-cyan-600 text-white rounded-lg font-bold">📂 讀取／匯入存檔</button>
-          <button onClick={()=>{ setPlayer(JSON.parse(JSON.stringify(INITIAL_PLAYER))); setEnemy(null); setFirstWeekOutcome(null); setLogs([{msg:'歡迎來到柯妤潔的娼館。',tag:'hint'}]); setGs('explore'); }}
+          <button onClick={startNewGame}
             className="w-full py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-bold">🆕 開新遊戲</button>
         </div>
       </div>
@@ -3825,7 +3837,7 @@ const TowerGame = () => {
   const {total:charmTotal} = calcCharm(player);
   const {title:fameTitle, color:repColor} = getReputationTitle(player.fame||0);
   const objective = getFirstWeekObjective(player);
-  const firstWeekEvent = getPendingFirstWeekEvent(player);
+  const firstWeekEvent = showPrologue ? null : getPendingFirstWeekEvent(player);
   const shopManagerTrust = player.relationships?.shopManager?.trust || 0;
   const sceneByState = {
     explore: { title: '娼館・大廳', subtitle: '今晚的安排，從這裡開始。' },
@@ -3901,11 +3913,10 @@ const TowerGame = () => {
                   {narrativeEntries.length > 0 ? narrativeEntries.map((entry, index) => {
                     const { msg, tag } = typeof entry === 'string' ? { msg: entry, tag: 'default' } : entry;
                     const isCurrent = index === narrativeEntries.length - 1;
-                    return (
-                      <p key={`${index}-${msg}`} className={`${LOG_COLORS[tag] || LOG_COLORS.default} ${isCurrent ? 'font-serif text-base leading-8 sm:text-lg' : 'text-sm leading-7 opacity-80'}`}>
-                        {msg}
-                      </p>
-                    );
+                    const className = `${LOG_COLORS[tag] || LOG_COLORS.default} ${isCurrent ? 'font-serif text-base leading-8 sm:text-lg' : 'text-sm leading-7 opacity-80'}`;
+                    return isCurrent
+                      ? <TypewriterText key={`${index}-${msg}`} text={msg} className={className} />
+                      : <p key={`${index}-${msg}`} className={className}>{msg}</p>;
                   }) : <p className={`font-serif text-base leading-8 sm:text-lg ${LOG_COLORS[latestTag] || LOG_COLORS.default}`}>{latestMessage || '夜色尚早。先決定柯妤潔接下來要做什麼。'}</p>}
                 </div>
               </div>
@@ -3951,11 +3962,13 @@ const TowerGame = () => {
         )}
       </div>
       <FirstWeekEventModal
+        key={firstWeekEvent?.id || 'no-first-week-event'}
         event={firstWeekEvent}
         shopManagerTrust={shopManagerTrust}
         portrait={pickPortrait(player.clothes)}
         onChoose={handleFirstWeekChoice}
       />
+      {showPrologue && <OpeningPrologueModal portrait={pickPortrait(player.clothes)} onContinue={() => setShowPrologue(false)} />}
       <FirstWeekOutcomeModal outcome={firstWeekOutcome} onClose={() => setFirstWeekOutcome(null)} />
     </div>
   );
