@@ -429,7 +429,6 @@ import { LOCATION_ART } from './src/locationArt.js'; // 地點場景立繪登記
 import { advanceFirstWeekTime, applyFirstWeekChoice, completeTutorialStep, getFirstWeekObjective, getPendingFirstWeekEvent, normalizeFirstWeekPlayer } from './src/progression.js';
 import FirstWeekEventModal from './src/components/FirstWeekEventModal.jsx';
 import FirstWeekOutcomeModal from './src/components/FirstWeekOutcomeModal.jsx';
-import BrothelMap from './src/components/BrothelMap.jsx';
 // 肉償休息區老闆文本：遵守規則 N（地點+行為），歸在「商店休息區」地點 = shopRest*，
 // 與前台 shop* 區分。下表把娼館池鍵對應到 shopRest* 池；未列入或未填者自動回退娼館文本。
 const BOSS_KEY = {
@@ -3518,24 +3517,6 @@ const TowerGame = () => {
     if (id==='tattoo')  { setPlayer(p=>addMinutes(p,10)); setGs('piercingShop'); return; }
   };
 
-  const handleBrothelMapInteraction = (id) => {
-    if (id === 'guest') { doExplore(); return; }
-    if (id === 'shop') { doOpenShop(); return; }
-    if (id === 'bath') {
-      setPlayer(p => ({ ...addMinutes(p, 5), bathSavedClothes: { ...p.clothes } }));
-      setGs('bathroom');
-      return;
-    }
-    if (id === 'wardrobe') { setGs('wardrobe'); return; }
-    if (id === 'street') {
-      setPlayer(p => ({ ...p, district: 'east' }));
-      setGs('street');
-      return;
-    }
-    if (id === 'rest') { doRest(1); return; }
-    if (id === 'save') setGs('saveLoad');
-  };
-
   const renderActions = () => {
   // 浴室場景
   if (gs==='bathroom') {
@@ -3776,10 +3757,6 @@ const TowerGame = () => {
   // 無客人時的探索介面
   return (
     <div className="space-y-2">
-      <BrothelMap onInteract={handleBrothelMapInteraction} />
-      <details className="rounded-xl border border-slate-700/60 bg-slate-950/35 px-3 py-2">
-        <summary className="cursor-pointer text-xs font-bold text-slate-400">暫時保留舊式按鈕</summary>
-        <div className="mt-3">
       <div className="grid grid-cols-2 gap-2">
         <button onClick={doExplore} className={BR.primary} style={BR.primaryStyle}>👤 接客</button>
         <button onClick={()=>setShowRestMenu(v=>!v)} className={BR.ghost} style={BR.ghostStyle}>🛌 休息 {showRestMenu?'▴':'▾'}</button>
@@ -3812,8 +3789,6 @@ const TowerGame = () => {
       </div>
       <div className="text-xs font-bold pl-1 pt-1" style={{color:'#8a6840'}}>系　統</div>
       <button onClick={()=>setGs('saveLoad')} className={`w-full ${BR.ghost}`} style={BR.ghostStyle}>💾 存讀檔</button>
-        </div>
-      </details>
     </div>
   );
 };
